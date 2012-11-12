@@ -1,0 +1,14 @@
+Controller tasks:
+- List all databases
+- Delete a database
+- Copy a database
+- Revert to previous version of method
+- List all methods
+- Delete a method
+- Copy a method
+- Import database (direcotory of files or single file)
+- Import a method (file)
+- Search methods
+- Search databases
+
+- Install controller as global script (linux and windows)

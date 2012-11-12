@@ -1,0 +1,7 @@
+syntax:glob
+dist
+bw2ui/web/static/*
+*.pyc
+*~
+MANIFEST
+*.sublime*

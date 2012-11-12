@@ -1,0 +1,4 @@
+include *.txt
+include bw2ui/*.py
+include bw2ui/web/*/*.*
+include bw2ui/bin/*.py
