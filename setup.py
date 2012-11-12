@@ -4,7 +4,7 @@ setup(
   name='bw2ui',
   version="0.1",
   packages=["bw2ui", "bw2ui.web"],
-  package_data={'bw2ui': ["web/static/*/*.*", "web/templates/*/*.html"]},
+  package_data={'bw2ui': ["web/static/*/*.*", "web/templates/*.*", "web/templates/*/*.*"]},
   author="Chris Mutel",
   author_email="cmutel@gmail.com",
   license=open('LICENSE.txt').read(),
