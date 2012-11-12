@@ -10,8 +10,9 @@
 	<!--[if lt IE 8]><link rel="stylesheet" href="{{ blueprint_ie }}" type="text/css" media="screen, projection"><![endif]-->
 	<script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
 	<script src="http://d3js.org/d3.v2.min.js"></script>
+	{% block extrahead %}{% endblock %}
 </head>
 <body>
-	<!-- body -->
+	{% block body %}{% endblock %}
 </body>
 </html>

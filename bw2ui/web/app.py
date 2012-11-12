@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*
-import base64
 from brightway2 import config, databases, methods, Database, Method
+from bw2analyzer import ContributionAnalysis
 from bw2calc import LCA
 from flask import Flask, url_for, render_template
+import base64
+import json
 
 app = Flask(__name__)
 
@@ -33,6 +35,9 @@ def lca(process=None, method=None):
         lca = LCA(process, method)
         lca.lci()
         lca.lcia()
+        rt, rb = lca.reverse_dict()
+        context["treemap_data"] = json.dumps(ContributionAnalysis().d3_treemap(
+            lca.characterized_inventory.data, rb, rt))
         return render_template("lca.html", **context)
     else:
         return "No parameters"
