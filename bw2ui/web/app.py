@@ -36,8 +36,14 @@ def lca(process=None, method=None):
         lca.lci()
         lca.lcia()
         rt, rb = lca.reverse_dict()
-        context["treemap_data"] = json.dumps(ContributionAnalysis().d3_treemap(
+        ca = ContributionAnalysis()
+        context["treemap_data"] = json.dumps(ca.d3_treemap(
             lca.characterized_inventory.data, rb, rt))
+        context["ia_score"] = "%.2g" % lca.score
+        context["ia_unit"] = methods[method]["unit"]
+        context["ia_method"] = ": ".join(method)
+        context["fu"] = [(ca.get_name(k), "%.2g" % v, ca.db_names[k[0]][k][
+            "unit"]) for k, v in process.iteritems()]
         return render_template("lca.html", **context)
     else:
         return "No parameters"
