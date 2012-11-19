@@ -1,0 +1,2 @@
+class UnknownAction(StandardError):
+    pass
