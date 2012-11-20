@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block extrahead %}<style type="text/css">
+body {
+	background-color: #736160;
+	}
+.errortext {
+		margin-top:13em
+}
+</style>{% endblock %}
+
+{% block body %}
+<div class="span-9"><img src="{{ url_for('static', filename="img/llama.jpg") }}"></div>
+<div class="push-1 span-12">
+	<div class="errortext">
+		<h1 style="color: white">404 - Page not found</h1>
+		<h2 style="color: white">We all get lost sometimes...</h2>
+	</div>
+</div>
+{% endblock %}

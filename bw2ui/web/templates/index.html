@@ -1,1 +1,58 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Brightway2 web</h1>
+<hr>
+<h3>Data directory is <i>{{ config.dir }}</i></h3>
+<div class="span-10">
+    <h2>Databases</h2>
+    <div id="db-table"></div>
+</div>
+<div class="span-14 last">
+    <h2>Impact assessment methods</h2>
+    <div id="ia-table"></div>
+</div>
+
+<script type="text/javascript">
+YUI().use('datatable-sort', 'datatable-scroll', function (Y) {
+    var inv_data = [
+        {% for db in databases.list %}{ name: "{{db}}", version: {{databases[db]["version"]}}, num: {{databases[db]["number"]}} }{% if loop.last %}{% else %},{% endif %}
+        {% endfor %}
+        ];
+
+    var db_table = new Y.DataTable({
+        columns: [
+            {key: "name", sortable: true}, 
+            {key: "version", sortable: true}, 
+            {key: "num", label: "# datasets", sortable: true}
+            ],
+        data: inv_data,
+        scrollable: true,
+        height: "200px"
+    });
+
+    db_table.render("#db-table");
+});
+
+YUI().use('datatable-sort', 'datatable-scroll', function (Y) {
+    var ia_data = [
+        {% for name in methods.list %}{ name: "{{ ' : '.join(name) }}", unit: "{{methods[name]["unit"]}}", num: {{methods[name]["num_cfs"]}} }{% if loop.last %}{% else %},{% endif %}
+        {% endfor %}
+        ];
+
+    var ia_table = new Y.DataTable({
+        columns: [
+            {key: "name", sortable: true}, 
+            {key: "unit", sortable: true}, 
+            {key: "num", label: "# CFs", sortable: true}
+            ],
+        data: ia_data,
+        scrollable: true,
+        height: "200px"
+    });
+
+    ia_table.render("#ia-table");
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block extrahead %}<style type="text/css">
+body {
+	background-color: #dcd8d5;
+	color: black !important
+	}
+.errortext {
+		margin-top:13em
+}
+</style>{% endblock %}
+
+{% block body %}
+<div class="span-9"><img src="{{ url_for('static', filename="img/monster.jpg") }}"></div>
+<div class="push-1 span-8">
+	<div class="errortext">
+		<h1>500 - Server Error</h1>
+		<h2>Something went wrong!</h2>
+	</div>
+</div>
+{% endblock %}

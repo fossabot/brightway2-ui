@@ -5,14 +5,14 @@
 	<title>{% if title %}{{ title }}{% else %}Brightway2 Web UI{% endif %}</title>
 	<meta name="description" content="The web user interface for the Brightway2 LCA engine">
 	<meta name="viewport" content="width=device-width">
-	<link rel="stylesheet" href="{{ blueprint_screen }}" type="text/css" media="screen, projection">
-	<link rel="stylesheet" href="{{ blueprint_print }}" type="text/css" media="print">
-	<!--[if lt IE 8]><link rel="stylesheet" href="{{ blueprint_ie }}" type="text/css" media="screen, projection"><![endif]-->
+	<link rel="stylesheet" href="{{ url_for('static', filename="blueprint/screen.css") }}" type="text/css" media="screen, projection">
+	<link rel="stylesheet" href="{{ url_for('static', filename="blueprint/print.css") }}" type="text/css" media="print">
+	<!--[if lt IE 8]><link rel="stylesheet" href="{{ url_for('static', filename="blueprint/ie.css") }}" type="text/css" media="screen, projection"><![endif]-->
 	<script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
 	<script src="http://d3js.org/d3.v2.min.js"></script>
 	{% block extrahead %}{% endblock %}
 </head>
-<body>
+<body class="yui3-skin-sam">
 	<div class="container">{% block body %}{% endblock %}</div>
 </body>
 </html>

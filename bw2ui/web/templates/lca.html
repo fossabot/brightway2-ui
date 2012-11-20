@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<style type="text/css">
+.cell {
+  border: solid 1px white;
+  font: 10px sans-serif;
+  line-height: 12px;
+  overflow: hidden;
+  position: absolute;
+  text-indent: 2px;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Brightway2 life cycle assessment report</h1>
+<hr>
+<div class="span-15 colborder">
+	<h2 style="margin-bottom: 0">Functional unit:</h2>
+	<ul style="margin-bottom: 0">
+		{% for name, amount, unit in fu %}
+		<li class="large" style="margin-bottom: 0; line-height: 1.2em">{{ name }}: {{ amount }} {{ unit }}</li>
+		{% endfor %}
+	</ul>
+	<h2 style="margin-bottom: 0">Impact assessment method:</h2>
+	<p class="large" style="margin-bottom: 0; line-height: 1.2em">{{ ia_method }}</p>
+</div>
+<div class="span-8 last">
+	<h2>Total score:</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000">{{ ia_score }}</span> {{ ia_unit }}</p>
+</div>
+<hr>
+<div id="chart"></div>
+<script type="text/javascript">
+	var width = 960,
+	    height = 400,
+	    color = d3.scale.category20();
+
+	var treemap = d3.layout.treemap()
+	    .size([width, height])
+	    .value(function(d) { return d.size; });
+
+	var div = d3.select("#chart").append("div")
+	    .style("position", "relative")
+	    .style("width", width + "px")
+	    .style("height", height + "px");
+
+	var treemap_data = {{ treemap_data|safe }};
+
+	div.data([treemap_data]).selectAll("div")
+	  .data(treemap.nodes)
+	.enter().append("div")
+	  .attr("class", "cell")
+	  .attr("title", function(d) { return d.children ? null : d.name; })
+	  .style("background", function(d) { return d.children ? color(d.name) : null; })
+	  .call(cell)
+	  .text(function(d) { return d.children ? null : d.name; });
+
+	function cell() {
+	  this
+	      .style("left", function(d) { return d.x + "px"; })
+	      .style("top", function(d) { return d.y + "px"; })
+	      .style("width", function(d) { return Math.max(0, d.dx - 1) + "px"; })
+	      .style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
+	}
+</script>
+{% endblock %}
