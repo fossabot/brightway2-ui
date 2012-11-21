@@ -17,6 +17,7 @@ Options:
 """
 from bw2ui.web import bw2webapp
 from docopt import docopt
+from werkzeug.serving import run_simple
 import random
 import threading
 import webbrowser
@@ -24,21 +25,16 @@ import webbrowser
 
 if __name__ == "__main__":
     args = docopt(__doc__, version='Brightway2 Web UI 0.1')
-
-    if args["--port"]:
-        port = int(args["--port"])
-    else:
-        port = 5000 + random.randint(0, 999)
-    url = "http://127.0.0.1:{}".format(port)
+    port = int(args.get("--port", False) or 5000 + random.randint(0, 999))
+    host = "0.0.0.0" if args.get("--insecure", False) else "localhost"
 
     if not args["--nobrowser"]:
+        url = "http://127.0.0.1:{}".format(port)
         threading.Timer(1., lambda: webbrowser.open_new_tab(url)).start()
 
     kwargs = {
-        "port": port,
-        "debug": args["--debug"]
+        "processes": args.get("--processes", 0) or 3,
+        "use_debugger": args["--debug"]
     }
-    if args["--insecure"]:
-        kwargs["host"] = '0.0.0.0'
 
-    bw2webapp.run(**kwargs)
+    run_simple(host, port, bw2webapp, **kwargs)

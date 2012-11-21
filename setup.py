@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
   name='bw2ui',
-  version="0.1",
+  version="0.2",
   packages=["bw2ui", "bw2ui.web"],
   package_data={'bw2ui': ["web/static/*/*.*", "web/templates/*.*", "web/templates/*/*.*"]},
   author="Chris Mutel",

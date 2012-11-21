@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import base64
 from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper
 from bw2analyzer import ContributionAnalysis
 from bw2calc import LCA
-from flask import Flask, url_for, render_template, request, redirect, abort
-import json
-import os
+from flask import Flask, url_for, render_template, request, redirect, abort, \
+    Response
+from jobs import JobDispatch, InvalidJob
+from utils import get_job_id, get_job, set_job_status
+import base64
 
 app = Flask(__name__)
 
@@ -23,6 +24,27 @@ def internal_error(e):
     return render_template('500.html'), 500
 
 
+@app.route("/status/<job>")
+def job_status(job):
+    try:
+        return Response(JsonWrapper.dumps(get_job(job)),
+            mimetype='application/json')
+    except:
+        abort(404)
+
+
+@app.route("/dispatch/<job>")
+def job_dispatch(job):
+    try:
+        job_data = get_job(job)
+    except:
+        abort(404)
+    try:
+        return JobDispatch()(job, **job_data)
+    except InvalidJob:
+        abort(500)
+
+
 @app.route('/')
 def index():
     context = {
@@ -33,11 +55,6 @@ def index():
     if config.is_temp_dir:
         context["redirect"] = url_for(start_bw)
     return render_template("index.html", **context)
-
-
-@app.route('/error')
-def error_t():
-    abort(404)
 
 
 @app.route('/calculate/lca')
@@ -52,7 +69,7 @@ def lca(process=None, method=None):
         lca.lcia()
         rt, rb = lca.reverse_dict()
         ca = ContributionAnalysis()
-        context["treemap_data"] = json.dumps(ca.d3_treemap(
+        context["treemap_data"] = JsonWrapper.dumps(ca.d3_treemap(
             lca.characterized_inventory.data, rb, rt))
         context["ia_score"] = "%.2g" % lca.score
         context["ia_unit"] = methods[method]["unit"]
@@ -63,11 +80,14 @@ def lca(process=None, method=None):
     else:
         return "No parameters"
 
-import uuid
 
-
-def get_job_id():
-    return uuid.uuid4().hex
+@app.route('/progress')
+def progress_test():
+    job_id = get_job_id()
+    status_id = get_job_id()
+    set_job_status(job_id, {"name": "progress-test", "status": status_id})
+    set_job_status(status_id, {"status": "Starting..."})
+    return render_template("progress.html", **{"job": job_id, 'status': status_id})
 
 
 @app.route('/start', methods=["GET", "POST"])
@@ -95,13 +115,6 @@ def start_bw():
     # Step four
     # There is no step four!
     # Actually, there is: go to the normal homepage
-
-jobs_dir = config.request_dir("jobs")
-
-
-def set_job_status(job, status):
-    filepath = os.path.join(jobs_dir, "%s.json" % job)
-    JsonWrapper.dump(status, filepath)
 
 # Normal homepage:
 # Think of what should be here
