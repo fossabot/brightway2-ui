@@ -4,7 +4,12 @@ setup(
   name='bw2ui',
   version="0.2",
   packages=["bw2ui", "bw2ui.web"],
-  package_data={'bw2ui': ["web/static/*/*.*", "web/templates/*.*", "web/templates/*/*.*"]},
+  package_data={'bw2ui.web': [
+    "static/blueprint/*.css",
+    "static/blueprint/plugins/buttons/*.css",
+    "static/blueprint/plugins/fancy-type/*.css",
+    "templates/*.html",
+    ]},
   author="Chris Mutel",
   author_email="cmutel@gmail.com",
   license=open('LICENSE.txt').read(),

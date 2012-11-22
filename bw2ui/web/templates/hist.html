@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<style type="text/css">
+.hist rect {
+  fill: cornflowerblue;
+}
+
+.y.axis line, .y.axis path {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+svg { 
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 80px;
+}
+</style>
+{% endblock %}
+
+
+{% block body %}
+<h1>Testing dynamic histogram</h1>
+<hr>
+<div class="hist" id="hist"></div>
+<script type="text/javascript">
+YUI().use('datasource-io', 'datasource-polling', 'json-parse', function (Y) {
+  var dispatch = new Y.DataSource.IO({source: "/dispatch/{{job}}"});
+  dispatch.sendRequest({
+    request: "",
+    callback: {
+      success: function() {},
+      failure: function() {}
+    }
+  });
+
+  dynamic_histogram = function () {
+    var data = [
+          {x: -2, y: 1},
+          {x: -1, y: 2},
+          {x: -0, y: 4},
+          {x: 1, y: 2},
+          {x: 2, y: 1}
+        ],
+        w = 300,
+        h = 200,
+        barPadding = 1,
+        scale = 10;
+
+    var svg = d3.select("#hist")
+      .append("svg")
+      .attr("width",w)
+      .attr("height",h);
+
+    var y = d3.scale.linear().range([h,0]),
+      yAxis = d3.svg.axis().scale(y).ticks(8).orient("left"),
+      x = d3.scale.linear().range([0, w]),
+      xmax = d3.max(data, function(d) { return d.x; }),
+      xmin = d3.min(data, function(d) { return d.x; }),
+      ymax = d3.max(data, function(d) { return d.y; });
+
+    y.domain([0, ymax]).nice();
+    x.domain([xmin, xmax]).nice();
+
+    var rect = svg.selectAll("rect")
+      .data(data)
+      .enter().append("rect")
+        // This draws rectangles DOWN
+        .attr("x", function(d) {return x(d.x);})
+        .attr("y", function(d) {return y(d.y);})
+        .attr("width", w / data.length - barPadding)
+        .attr("height", function(d) {return h - y(d.y);});
+                  
+    svg.append("svg:g")
+     .attr("class", "y axis")
+     .attr("transform", "translate(-4,0)")
+     .call(yAxis);        
+               
+    var update_hist_data = function(data) {
+      console.log(data);
+      var xmax = d3.max(data, function(d) { return d.x; }),
+        xmin = d3.min(data, function(d) { return d.x; }),
+        ymax = d3.max(data, function(d) { return d.y; });
+    
+      y.domain([0, ymax]).nice();
+      x.domain([xmin, xmax]).nice();
+      
+      var t = svg.transition().duration(100)
+        .select(".y.axis").call(yAxis);
+
+      // t.select(".x.axis").call(xAxis);
+      
+      var newrect = svg.selectAll("rect")
+        .data(data, function(d,i) {return i;});
+      newrect.enter().append("rect")
+        .attr("x", function(d) {return x(d.x);})
+        .attr("y", 0)
+        .attr("width", w / data.length - barPadding)
+        .attr("height", 0);
+      newrect.transition().duration(100)
+        .attr("x", function(d) {return x(d.x);})
+        .attr("y", function(d) {return y(d.y);})
+        .attr("width", w / data.length - barPadding)
+        .attr("height", function(d) {return h - y(d.y);});
+      newrect.exit()
+        .transition().duration(100)
+        .style("fill-opacity",1e-6)
+        .remove();
+      };
+
+    job_status = new Y.DataSource.IO({source: "/status/{{status}}"});
+    polling = job_status.setInterval(200, {
+      request: "",
+      callback: {
+        success: function (e) {
+          var status_data = Y.JSON.parse(e.response.results[0].response);
+          update_hist_data(status_data.data);
+          if (status_data.status === "finished") {
+            job_status.clearInterval(polling)
+          };
+        },
+        failure: function (e) {
+          console.log("Error");
+          console.log(e);
+        }
+      }
+    });
+  }();
+});
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
 include *.txt
-include bw2ui/*.py
-include bw2ui/web/*/*.*
-include bw2ui/bin/*.py
+recursive-include bw2ui/*.py
+recursive-include bw2ui/web *.css
+recursive-include bw2ui/web *.png

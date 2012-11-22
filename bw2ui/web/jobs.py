@@ -1,4 +1,6 @@
+from __future__ import division
 from utils import get_job, set_job_status
+import numpy as np
 import time
 
 example_text = """There's little can be said in 't; 'tis against the
@@ -27,6 +29,8 @@ class JobDispatch(object):
     def __call__(self, job, **kwargs):
         if kwargs.get("name", None) == "progress-test":
             return progress_test(job, **kwargs)
+        if kwargs.get("name", None) == "hist-test":
+            return hist_data(job, **kwargs)
         else:
             raise InvalidJob
 
@@ -38,4 +42,22 @@ def progress_test(job, **kwargs):
         time.sleep(0.5)
         set_job_status(kwargs["status"], {"status": x})
     set_job_status(kwargs["status"], {"status": "Finished", "finished": True})
+    return "done"
+
+
+def hist_data(job, **kwargs):
+    data = np.random.normal(size=100)
+    while data.shape[0] < 1e5:
+        data = np.hstack((data, np.random.normal(size=100)))
+        # data.sort()
+        # data = data[5:-5]
+        nbins = min(max(int(data.shape[0] ** 0.5), 10), 50)
+        hist, bins = np.histogram(data, bins=nbins)
+        xs = ((bins[:-1] + bins[1:]) / 2).tolist()
+        ys = hist.tolist()
+        set_job_status(kwargs["status"], {"data": [{"x": x, "y": y} for x, y \
+            in zip(xs, ys)], "status": "working"})
+        time.sleep(0.1)
+    set_job_status(kwargs["status"], {"status": "finished",
+        "data": [{"x": x, "y": y} for x, y in zip(xs, ys)]})
     return "done"

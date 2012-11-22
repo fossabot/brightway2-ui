@@ -90,6 +90,15 @@ def progress_test():
     return render_template("progress.html", **{"job": job_id, 'status': status_id})
 
 
+@app.route('/hist')
+def hist_test():
+    job_id = get_job_id()
+    status_id = get_job_id()
+    set_job_status(job_id, {"name": "hist-test", "status": status_id})
+    set_job_status(status_id, {"status": "Starting..."})
+    return render_template("hist.html", **{"job": job_id, 'status': status_id})
+
+
 @app.route('/start', methods=["GET", "POST"])
 def start_bw():
     """Start Brightway"""
