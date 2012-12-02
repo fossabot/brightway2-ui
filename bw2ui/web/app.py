@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper
-from bw2analyzer import ContributionAnalysis
+from bw2analyzer import ContributionAnalysis, DatabaseExplorer
 from bw2calc import LCA
-from flask import Flask, url_for, render_template, request, redirect, abort, \
-    Response
+from flask import Flask, url_for, render_template, request, redirect, abort
+from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
-from utils import get_job_id, get_job, set_job_status
-import base64
+from utils import get_job_id, get_job, set_job_status, json_response
+import itertools
 
 app = Flask(__name__)
 
@@ -27,8 +27,7 @@ def internal_error(e):
 @app.route("/status/<job>")
 def job_status(job):
     try:
-        return Response(JsonWrapper.dumps(get_job(job)),
-            mimetype='application/json')
+        return json_response(get_job(job))
     except:
         abort(404)
 
@@ -57,14 +56,20 @@ def index():
     return render_template("index.html", **context)
 
 
-@app.route('/calculate/lca')
-@app.route('/calculate/lca/<process>/<method>')
-def lca(process=None, method=None):
-    context = {}
-    if process:
-        method = eval(base64.urlsafe_b64decode(str(method)), None, None)
-        process = eval(base64.urlsafe_b64decode(str(process)), None, None)
-        lca = LCA(process, method)
+@app.route('/hinton')
+def hinton():
+    return render_template("hinton.html")
+
+
+@app.route('/lca', methods=["GET", "POST"])
+def lca():
+    if request.method == "GET":
+        return render_template("lca-select.html")
+    else:
+        fu = eval(request.form["activity"])
+        method = eval(request.form["method"])
+        context = {}
+        lca = LCA(fu, method)
         lca.lci()
         lca.lcia()
         rt, rb = lca.reverse_dict()
@@ -75,10 +80,8 @@ def lca(process=None, method=None):
         context["ia_unit"] = methods[method]["unit"]
         context["ia_method"] = ": ".join(method)
         context["fu"] = [(ca.get_name(k), "%.2g" % v, ca.db_names[k[0]][k][
-            "unit"]) for k, v in process.iteritems()]
+            "unit"]) for k, v in fu.iteritems()]
         return render_template("lca.html", **context)
-    else:
-        return "No parameters"
 
 
 @app.route('/progress')
@@ -97,6 +100,96 @@ def hist_test():
     set_job_status(job_id, {"name": "hist-test", "status": status_id})
     set_job_status(status_id, {"status": "Starting..."})
     return render_template("hist.html", **{"job": job_id, 'status': status_id})
+
+
+def filter_sort_process_database(data, filter=None, order=None):
+    if order:
+        data = list(itertools.chain(
+            *[[(k, v) for k, v in data.iteritems() if v["name"] == x
+            ] for x in order]))
+    else:
+        data = data.iteritems()
+    pass
+
+
+@app.route("/database/<name>")
+def database_explorer(name):
+    if name not in databases:
+        return abort(404)
+    db = Database(name)
+    data = db.load()
+    if request.args.get("q", None):
+        names = [x["name"] for x in data.values()]
+        names = process.extract(request.args.get("q"), names, limit=20)
+        data = filter_sort_process_database(data, filter=names, order=names)
+    else:
+        data = filter_sort_process_database(data)
+    return render_template("database.html",
+        name=name, data=JsonWrapper.dumps(data))
+
+
+@app.route("/method-json/<name1>/<name2>/<name3>")
+def method_json(name1, name2, name3):
+    name = (name1, name2, name3)
+    print name, name in methods
+    if name not in methods:
+        abort(404)
+    biosphere = Database("biosphere").load()
+    print "Biosphere loaded", len(biosphere)
+    cfs = [{"n": biosphere[x[0]]["name"],
+        "c": str(biosphere[x[0]]["categories"]),
+        "a": x[1]
+        } for x in Method(name).load().iteritems()]
+    cfs.sort()
+    return json_response(cfs)
+
+
+@app.route("/method/<name1>")
+@app.route("/method/<name1>/<name2>")
+@app.route("/method/<name1>/<name2>/<name3>")
+def method_explorer(name1, name2=None, name3=None):
+    return
+
+
+def short_name(name):
+    return " ".join(name.split(" ")[:3])[:25]
+
+
+@app.route("/database/tree/<name>/<code>")
+@app.route("/database/tree/<name>/<code>/<direction>")
+def database_tree(name, code, direction="backwards"):
+    def format_d(d):
+        return [{"name": short_name(data[k]["name"]),
+            "children": format_d(v) if isinstance(v, dict) \
+                else [{"name": short_name(data[x]["name"])} for x in v]
+            } for k, v in d.iteritems()]
+
+    if name not in databases:
+        abort(404)
+    explorer = DatabaseExplorer(name)
+    data = Database(name).load()
+    if (name, code) not in data:
+        try:
+            code = int(code)
+            assert (name, code) in data
+        except:
+            return abort(404)
+    if direction == "forwards":
+        nodes = explorer.uses_this_process((name, code), 1)
+    else:
+        nodes = explorer.provides_this_process((name, code), 1)
+    for db in databases[name]["depends"]:
+        data.update(Database(db).load())
+    formatted = {
+        "name": short_name(data[(name, code)]["name"]),
+        "children": format_d(nodes)
+    }
+    import pprint
+    pprint.pprint(formatted)
+    return render_template("database_tree.html",
+        f=formatted,
+        activity=data[(name, code)]["name"],
+        direction=direction.title())
 
 
 @app.route('/start', methods=["GET", "POST"])

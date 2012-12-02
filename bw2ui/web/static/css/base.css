@@ -1,0 +1,60 @@
+body {
+    background-image: url('/static/img/linedpaper.png');
+    background-repeat: repeat;
+}
+
+.container {
+    background: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-left: 2px solid dimgray;
+    border-right: 2px solid dimgray;
+    padding-bottom: 10px;
+    border-bottom: 1px solid dimgray;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+brightway {
+    color: dimgray;
+    font-weight: normal;
+}
+
+two {
+    color: cornflowerblue;
+    font-weight: normal;
+}
+
+.hinton-label {
+    overflow: hidden;
+    background: white;
+}
+
+.ihline {
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+
+.indicator {
+    stroke: red;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+    fill: none;
+}
+
+.grid-line {
+    stroke: darkgray;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+    fill: none;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: black;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}

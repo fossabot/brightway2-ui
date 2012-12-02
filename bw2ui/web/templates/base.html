@@ -9,11 +9,14 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename="blueprint/plugins/buttons/screen.css") }}" type="text/css" media="screen, projection">
 	<link rel="stylesheet" href="{{ url_for('static', filename="blueprint/print.css") }}" type="text/css" media="print">
 	<!--[if lt IE 8]><link rel="stylesheet" href="{{ url_for('static', filename="blueprint/ie.css") }}" type="text/css" media="screen, projection"><![endif]-->
+	<link rel="stylesheet" href="{{ url_for('static', filename="css/base.css") }}" type="text/css" media="screen, projection">
+	<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro' rel='stylesheet' type='text/css'>
 	<script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
 	<script src="http://d3js.org/d3.v2.min.js"></script>
 	{% block extrahead %}{% endblock %}
 </head>
 <body class="yui3-skin-sam">
-	<div class="container">{% block body %}{% endblock %}</div>
+	<div class="container">{% block header %}<h1><span id="brightway">Brightway</span><span id="two">2</span> web</h1><hr>{% endblock %}
+		{% block body %}{% endblock %}</div>
 </body>
 </html>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block body %}
+<form action="/lca" method="POST">
+  <fieldset>
+    <legend>LCA report setup</legend>
+        <p>Activity: <input type="text" name="activity"></p>
+        <p>Method: <input type="text" name="method"></p>
+        <p><input type="submit" name="submit"></p>
+  </fieldset>
+</form>
+{% endblock %}

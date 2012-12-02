@@ -14,8 +14,6 @@
 {% endblock %}
 
 {% block body %}
-<h1>Brightway2 life cycle assessment report</h1>
-<hr>
 <div class="span-15 colborder">
 	<h2 style="margin-bottom: 0">Functional unit:</h2>
 	<ul style="margin-bottom: 0">
@@ -33,8 +31,8 @@
 <hr>
 <div id="chart"></div>
 <script type="text/javascript">
-	var width = 960,
-	    height = 400,
+	var width = 950,
+	    height = 200,
 	    color = d3.scale.category20();
 
 	var treemap = d3.layout.treemap()
@@ -53,6 +51,7 @@
 	.enter().append("div")
 	  .attr("class", "cell")
 	  .attr("title", function(d) { return d.children ? null : d.name; })
+	  .style("font-size", "14px")
 	  .style("background", function(d) { return d.children ? color(d.name) : null; })
 	  .call(cell)
 	  .text(function(d) { return d.children ? null : d.name; });

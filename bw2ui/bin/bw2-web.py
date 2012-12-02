@@ -28,7 +28,7 @@ if __name__ == "__main__":
     clean_jobs_directory()
 
     args = docopt(__doc__, version='Brightway2 Web UI 0.1')
-    port = int(args.get("--port", False) or 5000 + random.randint(0, 999))
+    port = int(args.get("--port", False) or 5000)  # + random.randint(0, 999))
     host = "0.0.0.0" if args.get("--insecure", False) else "localhost"
 
     if not args["--nobrowser"]:
@@ -40,4 +40,5 @@ if __name__ == "__main__":
         "use_debugger": args["--debug"]
     }
 
-    run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
+    # run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
+    bw2webapp.run(debug=True)

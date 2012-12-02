@@ -1,4 +1,5 @@
 from brightway2 import config, JsonWrapper
+from flask import Response
 import os
 import uuid
 
@@ -15,3 +16,7 @@ def get_job(job):
 
 def get_job_id():
     return uuid.uuid4().hex
+
+
+def json_response(data):
+    return Response(JsonWrapper.dumps(data), mimetype='application/json')

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from brightway2 import databases, methods, Database, Method, config, reset_meta
-from brightway2.io import EcospoldImporter, EcospoldImpactAssessmentImporter
+from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
 from errors import UnknownAction
 
 
