@@ -9,6 +9,7 @@ setup(
     "static/blueprint/plugins/buttons/*.css",
     "static/blueprint/plugins/fancy-type/*.css",
     "static/img/*.png",
+    "static/img/*.ico",
     "static/img/*.jpg",
     "static/js/*.js",
     "static/css/*.css",

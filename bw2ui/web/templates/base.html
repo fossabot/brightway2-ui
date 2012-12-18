@@ -3,6 +3,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 	<title>{% if title %}{{ title }}{% else %}Brightway2 Web UI{% endif %}</title>
+	<link rel="shortcut icon" type="image/ico" href="{{ url_for('static', filename="img/favicon.ico") }}" />
 	<meta name="description" content="The web user interface for the Brightway2 LCA engine">
 	<meta name="viewport" content="width=device-width">
 	<link rel="stylesheet" href="{{ url_for('static', filename="blueprint/screen.css") }}" type="text/css" media="screen, projection">
@@ -11,7 +12,7 @@
 	<!--[if lt IE 8]><link rel="stylesheet" href="{{ url_for('static', filename="blueprint/ie.css") }}" type="text/css" media="screen, projection"><![endif]-->
 	<link rel="stylesheet" href="{{ url_for('static', filename="css/base.css") }}" type="text/css" media="screen, projection">
 	<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro' rel='stylesheet' type='text/css'>
-	<script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
+	<script src="http://yui.yahooapis.com/3.8.0/build/yui/yui-min.js"></script>
 	<script src="http://d3js.org/d3.v2.min.js"></script>
 	{% block extrahead %}{% endblock %}
 </head>
