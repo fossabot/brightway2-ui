@@ -12,6 +12,10 @@ import numpy as np
 
 app = Flask(__name__)
 
+###########################
+### Basic functionality ###
+###########################
+
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -23,6 +27,10 @@ def page_not_found(e):
 def internal_error(e):
     # Log error?
     return render_template('500.html'), 500
+
+############
+### Jobs ###
+############
 
 
 @app.route("/status/<job>")
@@ -44,6 +52,10 @@ def job_dispatch(job):
     except InvalidJob:
         abort(500)
 
+###################
+### Basic views ###
+###################
+
 
 @app.route('/')
 def index():
@@ -55,6 +67,38 @@ def index():
     if config.is_temp_dir:
         context["redirect"] = url_for(start_bw)
     return render_template("index.html", **context)
+
+
+@app.route('/start', methods=["GET", "POST"])
+def start_bw():
+    """Start Brightway"""
+    job_id = get_job_id()
+    if request.method == "GET":
+        pass
+    elif not request.form["confirm"] == "false":
+        return redirect(url_for(index) + "?temp_dir_ok=True")
+    # Starting Brightway
+    # If POST[action] = "get_biosphere":
+    set_job_status(job_id, {"action": "biosphere-import", "finished": False})
+    # Download file to disk
+    DatabaseImporter().importer(biosphere)
+    set_job_status(job_id, {"action": "biosphere-import", "finished": True})
+
+    # Step two
+    # Import IA methods
+    # Can also be from dropbox
+
+    # Step three
+    # Import Ecoinvent or other LCI database
+
+    # Step four
+    # There is no step four!
+    # Actually, there is: go to the normal homepage
+
+
+###########
+### LCA ###
+###########
 
 
 @app.route('/database/<name>/names')
@@ -83,32 +127,23 @@ def get_tuple_index(t, i):
         return "---"
 
 
-@app.route('/select')
-def process_selector():
-    return render_template("select.html",
-        db_names=[x for x in databases.list if x != "biosphere"],
-        lcia_methods=[{
-            "l1": get_tuple_index(key, 0),
-            "l2": get_tuple_index(key, 1),
-            "l3": get_tuple_index(key, 2),
-            "u": value["unit"],
-            "n": value["num_cfs"],
-            "k": key
-        } for key, value in methods.data.iteritems() if value.get("num_cfs", 1)])
-
-
-@app.route('/hinton')
-def hinton():
-    return render_template("hinton.html")
-
-
 @app.route('/lca', methods=["GET", "POST"])
 def lca():
     if request.method == "GET":
-        return render_template("lca-select.html")
+        return render_template("select.html",
+            db_names=[x for x in databases.list if x != "biosphere"],
+            lcia_methods=[{
+                "l1": get_tuple_index(key, 0),
+                "l2": get_tuple_index(key, 1),
+                "l3": get_tuple_index(key, 2),
+                "u": value["unit"],
+                "n": value["num_cfs"],
+            } for key, value in methods.data.iteritems() if value.get("num_cfs", 1)])
     else:
-        fu = eval(request.form["activity"])
-        method = eval(request.form["method"])
+        fu = dict([
+            (tuple(x[0]), x[1]) for x in JsonWrapper.loads(request.form["activity"])
+            ])
+        method = tuple(JsonWrapper.loads(request.form["method"]))
         context = {}
         lca = LCA(fu, method)
         lca.lci()
@@ -136,6 +171,16 @@ def lca():
         return render_template("lca.html", **context)
 
 
+#############
+### Tests ###
+#############
+
+
+@app.route('/hinton')
+def hinton():
+    return render_template("hinton.html")
+
+
 @app.route('/progress')
 def progress_test():
     job_id = get_job_id()
@@ -152,6 +197,10 @@ def hist_test():
     set_job_status(job_id, {"name": "hist-test", "status": status_id})
     set_job_status(status_id, {"status": "Starting..."})
     return render_template("hist.html", **{"job": job_id, 'status': status_id})
+
+#########################
+### Database explorer ###
+#########################
 
 
 def filter_sort_process_database(data, filter=None, order=None):
@@ -178,29 +227,6 @@ def database_explorer(name):
         data = filter_sort_process_database(data)
     return render_template("database.html",
         name=name, data=JsonWrapper.dumps(data))
-
-
-@app.route("/method-json/<name1>/<name2>/<name3>")
-def method_json(name1, name2, name3):
-    name = (name1, name2, name3)
-    print name, name in methods
-    if name not in methods:
-        abort(404)
-    biosphere = Database("biosphere").load()
-    print "Biosphere loaded", len(biosphere)
-    cfs = [{"n": biosphere[x[0]]["name"],
-        "c": str(biosphere[x[0]]["categories"]),
-        "a": x[1]
-        } for x in Method(name).load().iteritems()]
-    cfs.sort()
-    return json_response(cfs)
-
-
-@app.route("/method/<name1>")
-@app.route("/method/<name1>/<name2>")
-@app.route("/method/<name1>/<name2>/<name3>")
-def method_explorer(name1, name2=None, name3=None):
-    return
 
 
 def short_name(name):
@@ -243,38 +269,33 @@ def database_tree(name, code, direction="backwards"):
         activity=data[(name, code)]["name"],
         direction=direction.title())
 
+#######################
+### Method explorer ###
+#######################
 
-@app.route('/start', methods=["GET", "POST"])
-def start_bw():
-    """Start Brightway"""
-    job_id = get_job_id()
-    if request.method == "GET":
-        pass
-    elif not request.form["confirm"] == "false":
-        return redirect(url_for(index) + "?temp_dir_ok=True")
-    # Starting Brightway
-    # If POST[action] = "get_biosphere":
-    set_job_status(job_id, {"action": "biosphere-import", "finished": False})
-    # Download file to disk
-    DatabaseImporter().importer(biosphere)
-    set_job_status(job_id, {"action": "biosphere-import", "finished": True})
 
-    # Step two
-    # Import IA methods
-    # Can also be from dropbox
+@app.route("/method-json/<name1>/<name2>/<name3>")
+def method_json(name1, name2, name3):
+    name = (name1, name2, name3)
+    print name, name in methods
+    if name not in methods:
+        abort(404)
+    biosphere = Database("biosphere").load()
+    print "Biosphere loaded", len(biosphere)
+    cfs = [{"n": biosphere[x[0]]["name"],
+        "c": str(biosphere[x[0]]["categories"]),
+        "a": x[1]
+        } for x in Method(name).load().iteritems()]
+    cfs.sort()
+    return json_response(cfs)
 
-    # Step three
-    # Import Ecoinvent or other LCI database
 
-    # Step four
-    # There is no step four!
-    # Actually, there is: go to the normal homepage
+@app.route("/method/<name1>")
+@app.route("/method/<name1>/<name2>")
+@app.route("/method/<name1>/<name2>/<name3>")
+def method_explorer(name1, name2=None, name3=None):
+    return
 
-# Normal homepage:
-# Think of what should be here
-# At a minimum, a table of databases
-# and IA methods
-# A quick entry to LCA (define function units)
 
 # use werkzeug.utils.secure_filename to check uploaded file names
 # http://werkzeug.pocoo.org/docs/utils/
