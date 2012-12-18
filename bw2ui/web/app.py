@@ -73,7 +73,7 @@ def activity_names(name):
             "l": value["location"],
             "n": value["name"],
             "k": key
-        }} for key, value in data.iteritems() if value["num_cfs"]])
+        }} for key, value in data.iteritems()])
 
 
 def get_tuple_index(t, i):
@@ -94,7 +94,7 @@ def process_selector():
             "u": value["unit"],
             "n": value["num_cfs"],
             "k": key
-        } for key, value in methods.data.iteritems()])
+        } for key, value in methods.data.iteritems() if value.get("num_cfs", 1)])
 
 
 @app.route('/hinton')
