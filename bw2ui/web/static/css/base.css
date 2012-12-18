@@ -17,12 +17,12 @@ h1, h2, h3, h4 {
     font-family: 'Source Sans Pro', sans-serif;
 }
 
-brightway {
+#brightway {
     color: dimgray;
     font-weight: normal;
 }
 
-two {
+#two {
     color: cornflowerblue;
     font-weight: normal;
 }
@@ -57,4 +57,9 @@ two {
     stroke: black;
     stroke-width: 1;
     shape-rendering: crispEdges;
+}
+
+svg { 
+  padding-top: 10px;
+  padding-bottom: 10px;
 }

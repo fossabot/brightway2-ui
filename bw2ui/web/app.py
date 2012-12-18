@@ -2,12 +2,13 @@
 from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper
 from bw2analyzer import ContributionAnalysis, DatabaseExplorer
-from bw2calc import LCA
+from bw2calc import LCA, ParallelMonteCarlo
 from flask import Flask, url_for, render_template, request, redirect, abort
 from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
+import numpy as np
 
 app = Flask(__name__)
 
@@ -56,6 +57,46 @@ def index():
     return render_template("index.html", **context)
 
 
+@app.route('/database/<name>/names')
+def activity_names(name):
+    if name not in databases:
+        return abort(404)
+    db = Database(name)
+    data = db.load()
+    return json_response([{
+        "label": u"%s (%s, %s)" % (
+            value["name"],
+            value.get("unit", "?"),
+            value.get("location", "?")),
+        "value": {
+            "u": value["unit"],
+            "l": value["location"],
+            "n": value["name"],
+            "k": key
+        }} for key, value in data.iteritems() if value["num_cfs"]])
+
+
+def get_tuple_index(t, i):
+    try:
+        return t[i]
+    except IndexError:
+        return "---"
+
+
+@app.route('/select')
+def process_selector():
+    return render_template("select.html",
+        db_names=[x for x in databases.list if x != "biosphere"],
+        lcia_methods=[{
+            "l1": get_tuple_index(key, 0),
+            "l2": get_tuple_index(key, 1),
+            "l3": get_tuple_index(key, 2),
+            "u": value["unit"],
+            "n": value["num_cfs"],
+            "k": key
+        } for key, value in methods.data.iteritems()])
+
+
 @app.route('/hinton')
 def hinton():
     return render_template("hinton.html")
@@ -74,13 +115,24 @@ def lca():
         lca.lcia()
         rt, rb = lca.reverse_dict()
         ca = ContributionAnalysis()
-        context["treemap_data"] = JsonWrapper.dumps(ca.d3_treemap(
-            lca.characterized_inventory.data, rb, rt))
-        context["ia_score"] = "%.2g" % lca.score
-        context["ia_unit"] = methods[method]["unit"]
-        context["ia_method"] = ": ".join(method)
-        context["fu"] = [(ca.get_name(k), "%.2g" % v, ca.db_names[k[0]][k][
-            "unit"]) for k, v in fu.iteritems()]
+        # Monte Carlo
+        mc = np.array(ParallelMonteCarlo(fu, method, iterations=1000, chunk_size=150).calculate())
+        mc.sort()
+        mc_data = [(float(x), float(y)) for x, y in zip(*np.histogram(mc, bins=70))]
+        context.update({
+            "mc_median": float(np.median(mc)),
+            "mc_mean": float(np.average(mc)),
+            "mc_lower": float(mc[125]),
+            "mc_upper": float(mc[-125]),
+            "mc_data": JsonWrapper.dumps(mc_data),
+            "treemap_data": JsonWrapper.dumps(ca.d3_treemap(
+                lca.characterized_inventory.data, rb, rt)),
+            "ia_score": float(lca.score),
+            "ia_unit": methods[method]["unit"],
+            "ia_method": ": ".join(method),
+            "fu": [(ca.get_name(k), "%.2g" % v, ca.db_names[k[0]][k][
+                "unit"]) for k, v in fu.iteritems()],
+            })
         return render_template("lca.html", **context)
 
 

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.9.4/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.0/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen, projection">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.9.4/css/jquery.dataTables.css" type="text/css" media="screen, projection">
+<style type="text/css">
+    table.dataTable tr.row_selected td {
+        background-color: salmon !important;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Define the functional unit to assess</h1>
+<div class="span-7 colborder">
+    <p>
+        <h3>1. Chose database</h3>
+        <br>
+        {% for name in db_names %}
+        <input type="radio" name="database-select" value="{{ name }}"> {{ name }}<br>
+        {% endfor %}
+    </p>
+    <h3>2. Search by name:</h3>
+    <input id="activity-input" type="text" size=40>
+</div>
+<div class="span-16 last">
+    <h3>Selected activities:</h3>
+    <p>(click to change amounts)</p>
+    <table id="selected_activities">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Unit</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Key</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Not yet!</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="clear span-24">
+    <h1>Chose the LCIA method</h1>
+    <h3>Chosen method: <span id="chosen-method">(click below to chose a method)</span></h3>
+    <table id="lcia_methods">
+        <thead>
+            <tr>
+                <th>Level 1</th>
+                <th>Level 2</th>
+                <th>Level 3</th>
+                <th># CFs</th>
+                <th>Unit</th>
+                <th>Key</th>
+            </tr>
+        </thead>
+        <tbody>{% for m in lcia_methods %}
+            <tr>
+                <td>{{m.l1}}</td>
+                <td>{{m.l2}}</td>
+                <td>{{m.l3}}</td>
+                <td>{{m.n}}</td>
+                <td>{{m.u}}</td>
+                <td>{{m.k}}</td>
+            </tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+$(document).ready(function() {
+    selected_method = null;
+    $('#selected_activities').dataTable();
+    $('#lcia_methods').dataTable();
+    $('#selected_activities').dataTable().fnSetColumnVis(4, false);
+    $('#lcia_methods').dataTable().fnSetColumnVis(5, false);
+
+    $('input[name=database-select]:radio').change(function () {
+        var url = "/database/" + $(this).val() + "/names";
+        $.getJSON(url, function(result) {
+            $("#activity-input").autocomplete("option", "disabled", false);
+            $("#activity-input").autocomplete("option", "source", result);
+        });
+    });
+
+    $("#activity-input").autocomplete({
+        disabled: true,
+        source: ["foo", "bar", "baz"],
+        select: function( event, ui ) {
+            var table = $("#selected_activities").dataTable();
+            table.fnAddData([
+                1.0, ui.item.value.u, ui.item.value.n, ui.item.value.l, ui.item.value.k
+            ]);
+            if (table.fnGetData(0)[0] === "Not yet!") {
+                table.fnDeleteRow(0);
+            };
+            $("#activity-input").html("");
+            return false;
+        },
+        focus: function( event, ui ) { return false; }
+    });
+
+    $("#lcia_methods tbody tr").click( function( e ) {
+        if ( $(this).hasClass('row_selected') ) {
+            $(this).removeClass('row_selected');
+        }
+        else {
+            $('#lcia_methods').dataTable().$('tr.row_selected').removeClass('row_selected');
+            $(this).addClass('row_selected');
+        }
+        $("#chosen-method").html(this.cells[0].textContent + " : " + this.cells[1].textContent + " : " + this.cells[2].textContent);
+        console.log(this);
+        selected_method = this.cells[4].textContent;
+        console.log(selected_method);
+    });
+
+});
+</script>
+{% endblock %}

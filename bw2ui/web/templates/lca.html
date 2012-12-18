@@ -11,6 +11,8 @@
   text-indent: 2px;
 }
 </style>
+<script src="{{ url_for('static', filename="js/hinton.js") }}"></script>
+<script src="{{ url_for('static', filename="js/interp-histogram.js") }}"></script>
 {% endblock %}
 
 {% block body %}
@@ -26,10 +28,26 @@
 </div>
 <div class="span-8 last">
 	<h2>Total score:</h2>
-	<p class="large"><span style="font-size: 2.5em; color:#000">{{ ia_score }}</span> {{ ia_unit }}</p>
+	<p class="large"><span style="font-size: 2.5em; color:#000">{{ '%.2g' % ia_score }}</span> {{ ia_unit }}</p>
 </div>
 <hr>
-<div id="chart"></div>
+<h1 style="margin-bottom: 0">Monte Carlo results</h1>
+<div class="span-7">
+	<h2 style="margin-bottom: 0">Median</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000">{{ '%.2g' % mc_median }}</span> {{ ia_unit }}</p>
+	<h2 style="margin-bottom: 0">Average</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000">{{ '%.2g' % mc_mean }}</span> {{ ia_unit }}</p>
+	<h2 style="margin-bottom: 0">95% interval</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000">{{ '%.2g' % mc_lower }} - {{ '%.2g' % mc_upper }}</span> {{ ia_unit }}</p>
+</div>
+<div class="span-17 last" id="ihist"></div>
+<hr>
+<div id="treemap"></div>
+<script type="text/javascript">
+var data = {{ mc_data|safe}};
+
+interpolated_histogram(data, "{{ ia_unit }}", {{ mc_median }}, {{ mc_lower }}, {{ mc_upper }}, "#ihist", 680, 300, 10);
+</script>
 <script type="text/javascript">
 	var width = 950,
 	    height = 200,
@@ -39,7 +57,7 @@
 	    .size([width, height])
 	    .value(function(d) { return d.size; });
 
-	var div = d3.select("#chart").append("div")
+	var div = d3.select("#treemap").append("div")
 	    .style("position", "relative")
 	    .style("width", width + "px")
 	    .style("height", height + "px");

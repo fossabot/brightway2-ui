@@ -57,25 +57,25 @@ var interpolated_histogram = function (data, xlabel, median, upper, lower, id, w
   svg.append("svg:g")
       .append("svg:path")
       .attr("class", "indicator")
-      .attr("d", indicator_line([[lower, 0], [lower, y_max * 0.2]]));
+      .attr("d", indicator_line([[lower, 0], [lower, y_max * 0.95]]));
 
   svg.append("text")
     .attr("class", "label")
     .attr("text-anchor", "middle")
     .attr("x", x(lower))
-    .attr("y", y(y_max * 0.2) - 5 )
+    .attr("y", y(y_max * 0.95) - 5 )
     .text("95% lower");
 
   svg.append("svg:g")
       .append("svg:path")
       .attr("class", "indicator")
-      .attr("d", indicator_line([[upper, 0], [upper, y_max * 0.4]]));
+      .attr("d", indicator_line([[upper, 0], [upper, y_max * 0.95]]));
 
   svg.append("text")
     .attr("class", "x label")
     .attr("text-anchor", "middle")
     .attr("x", x(upper))
-    .attr("y", y(y_max * 0.4) - 5 )
+    .attr("y", y(y_max * 0.95) - 5 )
     .text("95% upper");
 
   svg.append("svg:g")
