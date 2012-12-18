@@ -78,13 +78,17 @@
 </div>
 <script>
 $(document).ready(function() {
-    selected_method = null;
+    var selected_method = null;
+    $("#activity-input").prop('disabled', true);
     $('#selected_activities').dataTable();
     $('#lcia_methods').dataTable();
     $('#selected_activities').dataTable().fnSetColumnVis(4, false);
     $('#lcia_methods').dataTable().fnSetColumnVis(5, false);
 
     $('input[name=database-select]:radio').change(function () {
+        $("#activity-input").prop('disabled', false);
+        $("#activity-input").focus();
+
         var url = "/database/" + $(this).val() + "/names";
         $.getJSON(url, function(result) {
             $("#activity-input").autocomplete("option", "disabled", false);
