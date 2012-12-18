@@ -138,10 +138,12 @@ def lca():
                 "l3": get_tuple_index(key, 2),
                 "u": value["unit"],
                 "n": value["num_cfs"],
-            } for key, value in methods.data.iteritems() if value.get("num_cfs", 1)])
+            } for key, value in methods.data.iteritems() if value.get(
+                "num_cfs", 1)])
     else:
         fu = dict([
-            (tuple(x[0]), x[1]) for x in JsonWrapper.loads(request.form["activity"])
+            (tuple(x[0]), x[1]) for x in JsonWrapper.loads(
+                request.form["activity"])
             ])
         method = tuple(JsonWrapper.loads(request.form["method"]))
         context = {}
@@ -151,15 +153,23 @@ def lca():
         rt, rb = lca.reverse_dict()
         ca = ContributionAnalysis()
         # Monte Carlo
-        mc = np.array(ParallelMonteCarlo(fu, method, iterations=1000, chunk_size=150).calculate())
+        iterations = 1000
+        mc = np.array(ParallelMonteCarlo(fu, method, iterations=iterations
+            ).calculate())
         mc.sort()
-        mc_data = [(float(x), float(y)) for x, y in zip(*np.histogram(mc, bins=70))]
+        mc_data = [(float(x), float(y)) for x, y in zip(*np.histogram(
+            mc, bins=70))]
         context.update({
             "mc_median": float(np.median(mc)),
             "mc_mean": float(np.average(mc)),
-            "mc_lower": float(mc[125]),
-            "mc_upper": float(mc[-125]),
+            "mc_lower": float(mc[int(0.025 * iterations)]),
+            "mc_upper": float(mc[int(0.975 * iterations)]),
             "mc_data": JsonWrapper.dumps(mc_data),
+            "herfindahl": ca.herfindahl_index(
+                lca.characterized_inventory.data, lca.score),
+            "concentration_ratio": ca.concentration_ratio(
+                lca.characterized_inventory.data, lca.score),
+            "hinton_data": JsonWrapper.dumps(ca.hinton_matrix(lca)),
             "treemap_data": JsonWrapper.dumps(ca.d3_treemap(
                 lca.characterized_inventory.data, rb, rt)),
             "ia_score": float(lca.score),
@@ -176,18 +186,14 @@ def lca():
 #############
 
 
-@app.route('/hinton')
-def hinton():
-    return render_template("hinton.html")
-
-
 @app.route('/progress')
 def progress_test():
     job_id = get_job_id()
     status_id = get_job_id()
     set_job_status(job_id, {"name": "progress-test", "status": status_id})
     set_job_status(status_id, {"status": "Starting..."})
-    return render_template("progress.html", **{"job": job_id, 'status': status_id})
+    return render_template("progress.html", **{"job": job_id,
+        'status': status_id})
 
 
 @app.route('/hist')
