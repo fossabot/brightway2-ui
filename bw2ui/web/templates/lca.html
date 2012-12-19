@@ -45,8 +45,8 @@
 <hr>
 <div class="span-24" id="treemap"></div>
 <hr>
-<div class="span-17" id="hinton"></div>
-<div class="span-7 last">
+<div class="span-14" id="hinton"></div>
+<div class="span-10 last">
 	<h2 style="margin-bottom: 0"><a href="http://en.wikipedia.org/wiki/Concentration_ratio">Concentration index</a></h2>
 	<p class="large" style="font-size: 2.5em; color:#000; margin-bottom: 0">{{ '%.2g' % concentration_ratio }}</p>
 	<h2 style="margin-bottom: 0"><a href="http://en.wikipedia.org/wiki/Herfindahl_index">Herfindahl index</a></h2>
@@ -55,10 +55,10 @@
 
 <script type="text/javascript">
 var hinton_data = {{ hinton_data|safe }};
-hinton_matrix(hinton_data.results, hinton_data.total, hinton_data.xlabels, hinton_data.ylabels, "#hinton", 680, 500, 10);
+hinton_matrix(hinton_data.results, hinton_data.total, hinton_data.xlabels, hinton_data.ylabels, "#hinton", 560, 560, 10);
 
 var mc_data = {{ mc_data|safe }};
-interpolated_histogram(mc_data, "{{ ia_unit }}", {{ mc_median }}, {{ mc_lower }}, {{ mc_upper }}, "#ihist", 680, 300, 10);
+interpolated_histogram(mc_data, "{{ ia_unit }}", {{ mc_median }}, {{ mc_upper }}, {{ mc_lower }}, "#ihist", 680, 300, 10);
 
 var width = 950,
     height = 200,
@@ -75,13 +75,15 @@ var div = d3.select("#treemap").append("div")
 
 var treemap_data = {{ treemap_data|safe }};
 
+var cell_color_scale = d3.scale.category20();
+
 div.data([treemap_data]).selectAll("div")
   .data(treemap.nodes)
 .enter().append("div")
   .attr("class", "cell")
   .attr("title", function(d) { return d.children ? null : d.name; })
   .style("font-size", "14px")
-  .style("background", function(d) { return d.children ? color(d.name) : null; })
+  .style("background", function(d, i) { return cell_color_scale(i % 20); }) // d.children ? color(d.name) : null; })
   .call(cell)
   .text(function(d) { return d.children ? null : d.name; });
 

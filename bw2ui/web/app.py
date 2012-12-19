@@ -8,6 +8,7 @@ from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
+import math
 import numpy as np
 
 app = Flask(__name__)
@@ -153,12 +154,15 @@ def lca():
         rt, rb = lca.reverse_dict()
         ca = ContributionAnalysis()
         # Monte Carlo
-        iterations = 1000
+        iterations = 10000
         mc = np.array(ParallelMonteCarlo(fu, method, iterations=iterations
             ).calculate())
         mc.sort()
+        # Filter out the outliers
+        one_percent = int(0.01 * iterations)
+        mc = mc[one_percent:-one_percent]
         mc_data = [(float(x), float(y)) for x, y in zip(*np.histogram(
-            mc, bins=70))]
+            mc, bins=max(100, min(20, int(math.sqrt(iterations))))))]
         context.update({
             "mc_median": float(np.median(mc)),
             "mc_mean": float(np.average(mc)),
