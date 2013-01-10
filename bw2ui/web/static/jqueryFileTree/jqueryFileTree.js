@@ -71,6 +71,9 @@ if(jQuery) (function($){
 								$(this).parent().find('UL').remove(); // cleanup
 								// showTree( $(this).parent(), escape($(this).attr('rel').match( /.*\// )) );
 								// RE breaks everything!?
+								if (typeof(fpselector) == typeof(Function)) {
+									fpselector($(this));
+								}
 								showTree( $(this).parent(), escape($(this).attr('rel')) );
 								$(this).parent().removeClass('collapsed').addClass('expanded');
 							} else {

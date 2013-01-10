@@ -2,7 +2,6 @@
 
 {% block extrahead %}
 <link rel="stylesheet" href="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.css") }}" type="text/css" media="screen, projection">
-<script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
 {% endblock %}
 
 {% block body %}
@@ -14,7 +13,12 @@
 
 <div id="fp"></div>
 
-
+<script type="text/javascript">
+function fpselector (a) {
+  $("#fp-selected").text(a.attr('rel'));
+};
+</script>
+<script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
 <script type="text/javascript">      
 $(document).ready( function() {        
   $('#fp').fileTree({
@@ -26,12 +30,7 @@ $(document).ready( function() {
     function(file) { 
       console.log(file);
     }
-  );        
-
-  $("#fp .directory").click(function () {
-    console.log($(this).attr('rel'));
-    $("#fp-selected").text($(this).attr('rel'));
-  });
+  );
 });
 </script>
 {% endblock %}
