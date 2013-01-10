@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from brightway2 import config, databases, methods, Database, Method, \
-    JsonWrapper
+    JsonWrapper, reset_meta
 from bw2analyzer import ContributionAnalysis, DatabaseExplorer
 from bw2calc import LCA, ParallelMonteCarlo
 from flask import Flask, url_for, render_template, request, redirect, abort
@@ -99,6 +99,58 @@ def fp_api():
             })
     return render_template("fp-select.html", dirtree=data)
 
+#######################
+### Getting started ###
+#######################
+
+
+@app.route('/start/path', methods=["POST"])
+def set_path():
+    path = urllib2.unquote(request.form["path"])
+    dirname = urllib2.unquote(request.form["dirname"])
+    dirpath = os.path.join(path, dirname)
+    if not os.path.exists(dirpath):
+        os.mkdir(dirpath)
+
+    user_dir = os.path.expanduser("~")
+    if platform.system == "Windows":
+        filename = "brightway2path.txt"
+    else:
+        filename = ".brightway2path"
+    with open(os.path.join(user_dir, filename), "w") as f:
+        f.write(dirpath)
+
+    config.reset()
+    config.create_basic_directories()
+    reset_meta()
+    return "1"
+
+
+@app.route('/start/biosphere')
+def install_biosphere():
+    # Download and format data
+    keys, values = JsonWrapper.loads(
+        requests.get("http://mutel.org/biosphere.json").content)
+    data = dict(zip([tuple(x) for x in keys], values))
+    biosphere = Database("biosphere")
+    biosphere.register(
+        format=["Handmade", -1],
+        depends=[],
+        num_processes=len(data),
+        )
+    biosphere.write(data)
+    biosphere.process()
+    return "1"
+
+
+@app.route('/start')
+def start():
+    return render_template("start.html")
+    """
+    You are currently saving your work in a temporary directory that can be deleted at any time. You can let Brightway2 create a workspace in your home directory, or you can specify a different directory by typing in the full path below:
+    """
+
+
 ###################
 ### Basic views ###
 ###################
@@ -106,8 +158,11 @@ def fp_api():
 
 @app.route('/')
 def index():
-    if config.is_temp_dir and not config.p["temp_dir_ok"]:
-        redirect(url_for('start_bw'))
+    print config.p.get("temp_dir_ok", False)
+    print config.is_temp_dir and not config.p.get("temp_dir_ok", False)
+    if config.is_temp_dir and not config.p.get("temp_dir_ok", False):
+        print "Trying to redirect..."
+        return redirect(url_for('start'))
     dbs = [{
         "name": key,
         "number": value["number"],
@@ -138,68 +193,6 @@ def change_settings():
         return render_template("settings.html", **context)
     else:
         return ""
-
-
-@app.route('/install-biosphere')
-def install_biosphere():
-    # Download and format data
-    keys, values = JsonWrapper.loads(requests.get("http://mutel.org/biosphere.json").content)
-    data = dict(zip([tuple(x) for x in keys], values))
-    biosphere = Database.register(
-        format=["Handmade", -1],
-        depends=[],
-        num_processes=len(data),
-        version=1,
-        )
-    biosphere.write(data)
-    biosphere.process()
-    return "1"
-
-    windows = platform.system == "Windows"
-
-
-@app.route('/installing-biosphere')
-def installing_biosphere():
-    pass
-
-
-@app.route('/start', methods=["GET", "POST"])
-def start_bw():
-    """Start Brightway"""
-    # job_id = get_job_id()
-    if request.method == "GET":
-        pass
-    elif not request.form["confirm"] == "false":
-        return redirect(url_for('index') + "?temp_dir_ok=1")
-    # Starting Brightway
-    # If POST[action] = "get_biosphere":
-    set_job_status(job_id, {"action": "biosphere-import", "finished": False})
-    # Download file to disk
-    DatabaseImporter().importer(biosphere)
-    set_job_status(job_id, {"action": "biosphere-import", "finished": True})
-
-    """
-    Hi! It looks like you are start Brightway2 for the first time.
-
-    You are currently saving your work in a temporary directory that can be deleted at any time. You can let Brightway2 create a workspace in your home directory, or you can specify a different directory by typing in the full path below:
-    """
-
-    """
-    OK, now its time to retrieve generic biosphere data. Click on the button below, and be patient...
-    """
-
-
-    # Step two
-    # Import IA methods
-    # Can also be from dropbox
-
-    # Step three
-    # Import Ecoinvent or other LCI database
-
-    # Step four
-    # There is no step four!
-    # Actually, there is: go to the normal homepage
-
 
 ###########
 ### LCA ###

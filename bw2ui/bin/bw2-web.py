@@ -41,4 +41,4 @@ if __name__ == "__main__":
     }
 
     # run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
-    bw2webapp.run(debug=True)
+    bw2webapp.run(debug=False)
