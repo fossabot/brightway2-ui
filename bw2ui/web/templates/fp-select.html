@@ -1,0 +1,4 @@
+<ul class="jqueryFileTree" style="display: none;">
+    {% for o in dirtree %}<li class="{% if o.dir %}directory collapsed{% else %}file ext_{{o.ext}}{% endif %}"><a href="#" rel="{{ o.path }}">{{ o.name }}</a></li>
+    {% endfor %}
+</ul>

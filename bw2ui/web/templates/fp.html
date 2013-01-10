@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.css") }}" type="text/css" media="screen, projection">
+<script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
+{% endblock %}
+
+{% block body %}
+<h1>Filepicker test</h1>
+
+<p>Note: Not all files are shown! You are selecting a directory, not files...</p>
+
+<p>Selected element: <span id="fp-selected">None yet...</span></p>
+
+<div id="fp"></div>
+
+
+<script type="text/javascript">      
+$(document).ready( function() {        
+  $('#fp').fileTree({
+    root: '/', 
+    script: '/fp-api', 
+    folderEvent: 'click', 
+    multiFolder: false 
+    }, 
+    function(file) { 
+      console.log(file);
+    }
+  );        
+
+  $("#fp .directory").click(function () {
+    console.log($(this).attr('rel'));
+    $("#fp-selected").text($(this).attr('rel'));
+  });
+});
+</script>
+{% endblock %}

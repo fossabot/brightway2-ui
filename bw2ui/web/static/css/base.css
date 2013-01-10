@@ -63,3 +63,12 @@ svg {
   padding-top: 10px;
   padding-bottom: 10px;
 }
+
+table.dataTable tr.row_selected td {
+    background-color: salmon !important;
+}
+
+/*http://stackoverflow.com/questions/8594974/jquery-datatabels-jquery-ui-theme-arrows-wrap-on-th*/
+table thead th span.css_right {
+  float: right;
+}

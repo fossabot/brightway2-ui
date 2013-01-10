@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
   name='bw2ui',
@@ -8,6 +8,10 @@ setup(
     "static/blueprint/*.css",
     "static/blueprint/plugins/buttons/*.css",
     "static/blueprint/plugins/fancy-type/*.css",
+    "static/jqueryFileTree/*.css",
+    "static/jqueryFileTree/*.js",
+    "static/jqueryFileTree/images/*.png",
+    "static/jqueryFileTree/images/*.gif",
     "static/img/*.png",
     "static/img/*.ico",
     "static/img/*.jpg",

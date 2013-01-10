@@ -1,7 +1,9 @@
 include *.txt
-recursive-include bw2ui/*.py
+recursive-include bw2ui *.py
 recursive-include bw2ui/web *.css
 recursive-include bw2ui/web *.png
+recursive-include bw2ui/web *.gif
 recursive-include bw2ui/web *.jpg
 recursive-include bw2ui/web *.ico
 recursive-include bw2ui/web *.js
+recursive-include bw2ui/web *.html

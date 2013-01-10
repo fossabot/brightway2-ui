@@ -9,7 +9,13 @@ from jobs import JobDispatch, InvalidJob
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
 import math
+import multiprocessing
 import numpy as np
+import os
+import platform
+import requests
+import urllib2
+
 
 app = Flask(__name__)
 
@@ -54,36 +60,134 @@ def job_dispatch(job):
         abort(500)
 
 ###################
+### File Picker ###
+###################
+
+
+@app.route("/filepicker")
+def fp_test():
+    return render_template("fp.html")
+
+
+@app.route("/fp-api", methods=["POST"])
+def fp_api():
+    path = urllib2.unquote(request.form["dir"])
+    try:
+        root, dirs, files = os.walk(path).next()
+    except StopIteration:
+        # Only files from now on...
+        root, dirs = path, []
+        files = os.listdir(root)
+    data = []
+    files = [x for x in files if x[0] != "."]
+    if len(files) > 20:
+        files = files[:20] + ["(and %s more files...)" % (len(files) - 20)]
+    for dir_name in dirs:
+        if dir_name[0] == ".":
+            continue
+        data.append({
+            "dir": True,
+            "path": os.path.join(root, dir_name),
+            "name": dir_name
+            })
+    for file_name in files:
+        data.append({
+            "dir": False,
+            "ext": file_name.split(".")[-1].lower(),
+            "path": os.path.join(root, file_name),
+            "name": file_name
+            })
+    return render_template("fp-select.html", dirtree=data)
+
+###################
 ### Basic views ###
 ###################
 
 
 @app.route('/')
 def index():
+    if config.is_temp_dir and not config.p["temp_dir_ok"]:
+        redirect(url_for('start_bw'))
+    dbs = [{
+        "name": key,
+        "number": value["number"],
+        "version": value["version"]
+        } for key, value in databases.iteritems()]
+    ms = [{
+        "name": " - ".join(key),
+        "unit": value["unit"],
+        "num_cfs": value["num_cfs"]
+    } for key, value in methods.iteritems()]
     context = {
-        'databases': databases,
-        'methods': methods,
+        'databases': dbs,
+        'methods': ms,
         'config': config
         }
-    if config.is_temp_dir:
-        context["redirect"] = url_for(start_bw)
     return render_template("index.html", **context)
+
+
+@app.route('/settings', methods=["GET", "POST"])
+def change_settings():
+    if request.method == "GET":
+        context = {
+            "config": config,
+            "cpu_count": multiprocessing.cpu_count(),
+            "current_cpu_count": config.p.get("cpu_count",
+                multiprocessing.cpu_count()),
+        }
+        return render_template("settings.html", **context)
+    else:
+        return ""
+
+
+@app.route('/install-biosphere')
+def install_biosphere():
+    # Download and format data
+    keys, values = JsonWrapper.loads(requests.get("http://mutel.org/biosphere.json").content)
+    data = dict(zip([tuple(x) for x in keys], values))
+    biosphere = Database.register(
+        format=["Handmade", -1],
+        depends=[],
+        num_processes=len(data),
+        version=1,
+        )
+    biosphere.write(data)
+    biosphere.process()
+    return "1"
+
+    windows = platform.system == "Windows"
+
+
+@app.route('/installing-biosphere')
+def installing_biosphere():
+    pass
 
 
 @app.route('/start', methods=["GET", "POST"])
 def start_bw():
     """Start Brightway"""
-    job_id = get_job_id()
+    # job_id = get_job_id()
     if request.method == "GET":
         pass
     elif not request.form["confirm"] == "false":
-        return redirect(url_for(index) + "?temp_dir_ok=True")
+        return redirect(url_for('index') + "?temp_dir_ok=1")
     # Starting Brightway
     # If POST[action] = "get_biosphere":
     set_job_status(job_id, {"action": "biosphere-import", "finished": False})
     # Download file to disk
     DatabaseImporter().importer(biosphere)
     set_job_status(job_id, {"action": "biosphere-import", "finished": True})
+
+    """
+    Hi! It looks like you are start Brightway2 for the first time.
+
+    You are currently saving your work in a temporary directory that can be deleted at any time. You can let Brightway2 create a workspace in your home directory, or you can specify a different directory by typing in the full path below:
+    """
+
+    """
+    OK, now its time to retrieve generic biosphere data. Click on the button below, and be patient...
+    """
+
 
     # Step two
     # Import IA methods
