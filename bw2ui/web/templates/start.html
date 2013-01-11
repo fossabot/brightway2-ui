@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.css") }}" type="text/css" media="screen, projection">
+{% endblock %}
+
+{% block body %}
+<div id="select-path">
+  <h1>Hi! It looks like you are starting Brightway2 for the first time.</h1>
+  <div class="span-15 colborder">
+    <h3 id="fp-selected">1. Click to select the directory that Brightway2 data will be saved in</h3>
+    <p>You <b>must</b> have permission to write to this directory!</p>
+    <p>Note: Not all files are shown! You are selecting a directory, not files...</p>
+    <div id="fp"></div>
+  </div>
+  <div class="span-8 last">
+    <form name="path-form">
+      <h3>2. Then name the data directory:</h3>
+      <input name="dirname" type="text" value="brightway2"><br>
+      <input id="hidden-path" name="path" type="hidden" value="">
+      <button id="submit-path" type="submit" style="">Set Brightway2 data path</button>
+    </form>
+  </div>
+</div>
+
+<div id="import-biosphere" class="span-24 clear">
+  <h1>Great, that worked!</h1>
+  <h3>Let's import the basic data needed for Brightway2</h3>
+  <p>Please be patient - this might take a bit, depending on your internet connection...</p>
+  <button id="import-biosphere">Import basic metadata</button>
+</div>
+
+<div id="success" class="span-24 clear">
+  <h1>OK, the boring stuff is done</h1>
+  <p>You still need to import some data (e.g. the ecoinvent database) and some LCIA methods, but you can do that from the home page. Try the <b>Import database</b> and <b>Import LCIA method</b> buttons.</p>
+  <a href="/"><button>Go to home page</button></a><br>
+</div>
+
+<script type="text/javascript">
+function fpselector (a) {
+  $("#fp-selected").text("Currently selected: " + a.attr('rel'));
+  $("#hidden-path").val(a.attr('rel'));
+  $("#submit-path").show();
+};
+</script>
+<script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
+<script type="text/javascript">      
+$(document).ready( function() {        
+  $("#submit-path").hide();
+  $("#import-biosphere").hide();
+  $("#success").hide();
+
+  $('#fp').fileTree({
+    root: '/', 
+    script: '/fp-api', 
+    folderEvent: 'click', 
+    multiFolder: false 
+    }, 
+    function(file) { 
+      console.log(file);
+    }
+  );
+
+  $('#import-biosphere').click(function () {
+    $.ajax({
+      type: "GET",
+      url: "/start/biosphere",
+      success: function () {
+        $("#import-biosphere").hide();
+        $("#success").show();
+      }
+    });
+  });
+
+  $('form[name=path-form]').submit( function (e) {
+    e.preventDefault();
+    $.ajax({
+      type: "POST",
+      url: '/start/path',
+      data: $(this).serialize(),
+      success: function () {
+        $("#select-path").hide();
+        $("#import-biosphere").show();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
