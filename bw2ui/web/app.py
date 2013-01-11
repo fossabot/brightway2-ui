@@ -3,6 +3,7 @@ from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper, reset_meta
 from bw2analyzer import ContributionAnalysis, DatabaseExplorer
 from bw2calc import LCA, ParallelMonteCarlo
+from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
 from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
@@ -71,6 +72,7 @@ def fp_test():
 
 @app.route("/fp-api", methods=["POST"])
 def fp_api():
+    full = bool(request.args.get("full", False))
     path = urllib2.unquote(request.form["dir"])
     try:
         root, dirs, files = os.walk(path).next()
@@ -80,7 +82,7 @@ def fp_api():
         files = os.listdir(root)
     data = []
     files = [x for x in files if x[0] != "."]
-    if len(files) > 20:
+    if not full and len(files) > 20:
         files = files[:20] + ["(and %s more files...)" % (len(files) - 20)]
     for dir_name in dirs:
         if dir_name[0] == ".":
@@ -121,6 +123,7 @@ def set_path():
         f.write(dirpath)
 
     config.reset()
+    config.is_temp_dir = False
     config.create_basic_directories()
     reset_meta()
     return "1"
@@ -150,6 +153,30 @@ def start():
     You are currently saving your work in a temporary directory that can be deleted at any time. You can let Brightway2 create a workspace in your home directory, or you can specify a different directory by typing in the full path below:
     """
 
+#################
+### Importing ###
+#################
+
+
+@app.route("/import/database", methods=["GET", "POST"])
+def import_database():
+    if request.method == "GET":
+        return render_template("import-database.html")
+    else:
+        path = urllib2.unquote(request.form["path"])
+        name = urllib2.unquote(request.form["name"])
+        EcospoldImporter().importer(path, name)
+        return "1"
+
+
+@app.route("/import/method", methods=["GET", "POST"])
+def import_method():
+    if request.method == "GET":
+        return render_template("import-method.html")
+    else:
+        path = urllib2.unquote(request.form["path"])
+        EcospoldImpactAssessmentImporter().importer(path)
+        return "1"
 
 ###################
 ### Basic views ###
@@ -158,10 +185,7 @@ def start():
 
 @app.route('/')
 def index():
-    print config.p.get("temp_dir_ok", False)
-    print config.is_temp_dir and not config.p.get("temp_dir_ok", False)
     if config.is_temp_dir and not config.p.get("temp_dir_ok", False):
-        print "Trying to redirect..."
         return redirect(url_for('start'))
     dbs = [{
         "name": key,
