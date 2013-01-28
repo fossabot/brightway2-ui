@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper, reset_meta
 from bw2analyzer import ContributionAnalysis, DatabaseExplorer
 from bw2calc import LCA, ParallelMonteCarlo
+from bw2calc.speed_test import SpeedTest
 from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
 from fuzzywuzzy import process
@@ -217,6 +219,12 @@ def change_settings():
         return render_template("settings.html", **context)
     else:
         return ""
+
+
+@app.route('/speedtest')
+def speed_test():
+    st = SpeedTest()
+    return str(250 * int(40 * st.ratio()))
 
 ###########
 ### LCA ###
