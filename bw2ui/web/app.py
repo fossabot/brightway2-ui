@@ -213,12 +213,18 @@ def change_settings():
         context = {
             "config": config,
             "cpu_count": multiprocessing.cpu_count(),
-            "current_cpu_count": config.p.get("cpu_count",
-                multiprocessing.cpu_count()),
         }
         return render_template("settings.html", **context)
     else:
-        return ""
+        config.p["use_cache"] = bool(request.form.get("use-cache", False))
+        config.p["temp_dir_ok"] = bool(request.form.get("use-temp-dir", False))
+        config.p["cpu_cores"] = int(request.form["cpu-cores"])
+        config.p["iterations"] = int(request.form["iterations"])
+        config.p["upload_reports"] = bool(request.form.get(
+            "upload-reports", False))
+        config.p["report_server_url"] = request.form["report-server"]
+        config.save_preferences()
+        return redirect(url_for('index'))
 
 
 @app.route('/speedtest')

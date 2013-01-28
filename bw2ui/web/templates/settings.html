@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Brightway2 settings</h1>
+<form action="/settings" method="POST">
+  <div class="span-12">
+  <fieldset>
+    <legend>Basic configuration</legend>
+    <p>Use temporary directories (default: <b>No</b>): <input type="checkbox" name="use-temp-dir" {% if config.p.use_temp_dir %}checked{% endif %}></p>
+    <p>Use process cache (default: <b>Yes</b>): <input type="checkbox" name="use-cache" {% if config.p.use_cache %}checked{% endif %}></p>
+  </fieldset>
+  <fieldset>
+    <legend>Monte Carlo</legend>
+    <p>Number of CPU cores to use (maximum <b>{{ cpu_count }}</b>): <br><input type="number" name="cpu-cores" min="1" max="{{ cpu_count }}" step="1" value="{% if config.p.cpu_cores %}{{ config.p.cpu_cores }}{% else %}{{ cpu_count }}{% endif %}"></p>
+    <p>Number of Monte Carlo iterations in a calculation (default <b>10000</b>, minimum: <b>100</b>): <br> <button id="speedtest">Set this value based on my computer</button> <input name="iterations" type="number" value="{% if config.p.default_iterations %}{{ config.p.default_iterations }}{% else %}10000{% endif %}" min="100"> </p>
+  </fieldset>
+  </div>
+  <div class="span-12 last">
+  <fieldset>
+    <legend>Report uploading</legend>
+    <p>Upload report data to external server (experimental; default: <b>No</b>): <input type="checkbox" name="upload-reports" {% if config.p.upload_reports %}checked{% endif %}></p>
+    <p>External report server (experimental; default <i>reports.brightwaylca.org</i>): <br> <button id="reset-server">Reset to default</button> <input size="60" name="report-server" type="url" value="{% if config.p.report_server %}{{ config.p.report_server }}{% else %}http://reports.brightwaylca.org{% endif %}"> </p>
+  </fieldset>
+    <button type="submit">Save preferences</button>
+  </div>
+</form>
+
+<script type="text/javascript">      
+$(document).ready( function() {        
+  $('#speedtest').click( function (e) {
+    e.preventDefault();
+    $("#speedtest").html("Working...");    
+    $.ajax({
+      type: "GET",
+      url: "/speedtest",
+      success: function (a) {
+        $('form input[name=iterations]').attr("value", a);
+        $("#speedtest").html("Test again");
+        console.log(a);
+      }
+    });
+  });
+
+  $('#reset-server').click( function (e) {
+    e.preventDefault();
+    $("form input[name=report-server]").attr("value", "http://reports.brightwaylca.org");
+  });
+});
+</script>
+{% endblock %}

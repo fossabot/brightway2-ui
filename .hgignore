@@ -5,3 +5,4 @@ bw2ui/web/static/*
 *~
 MANIFEST
 *.sublime*
+bw2ui.egg-info
