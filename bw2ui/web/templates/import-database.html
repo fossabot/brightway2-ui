@@ -54,8 +54,6 @@ $(document).ready( function() {
   $('form[name=path-form]').submit( function (e) {
     e.preventDefault();
     if (($("#dir-file").val() != '') && ($("#hidden-path").val() != '')) {
-      console.log("ready");
-      console.log($(this).serialize());
       $("#in-submission").show();
       $("#select-path").hide();
       $.ajax({

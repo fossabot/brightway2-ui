@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<style type="text/css">
+.cell {
+  border: solid 1px white;
+  font: 10px sans-serif;
+  line-height: 12px;
+  overflow: hidden;
+  position: absolute;
+  text-indent: 2px;
+}
+</style>
+<script src="{{ url_for('static', filename="js/hinton.js") }}"></script>
+<script src="{{ url_for('static', filename="js/stepped-histogram.js") }}"></script>
+<script src="{{ url_for('static', filename="js/hinton.js") }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="span-15 colborder">
+	<h2 style="margin-bottom: 0">Functional unit:</h2>
+	<ul style="margin-bottom: 0" id="activity"></ul>
+	<h2 style="margin-bottom: 0">Impact assessment method:</h2>
+	<p class="large" style="margin-bottom: 0; line-height: 1.2em" id="method-name"></p>
+</div>
+<div class="span-8 last">
+	<h2>Total score:</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000" id="ia-score"></span> <span class="ia-unit"></span></p>
+</div>
+<hr>
+<h1 style="margin-bottom: 0">Monte Carlo results</h1>
+<div class="span-7">
+	<h2 style="margin-bottom: 0">Median</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000" id="mc-median"></span> <span class="ia-unit"></span></p>
+	<h2 style="margin-bottom: 0">Average</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000" id="mc-mean"></span> <span class="ia-unit"></span></p>
+	<h2 style="margin-bottom: 0">95% density interval</h2>
+	<p class="large"><span style="font-size: 2.5em; color:#000"> <span id="mc-lower"></span>:<span id="mc-upper"></span></span> <span class="ia-unit"></span></p>
+</div>
+<div class="span-17 last" id="ihist"></div>
+<hr>
+<div class="span-24" id="treemap"></div>
+<hr>
+<div class="span-14" id="hinton"></div>
+<div class="span-10 last">
+	<h2 style="margin-bottom: 0"><a href="http://en.wikipedia.org/wiki/Concentration_ratio">Concentration index</a></h2>
+	<p class="large" style="font-size: 2.5em; color:#000; margin-bottom: 0" id="concentration-ratio"></p>
+	<h2 style="margin-bottom: 0"><a href="http://en.wikipedia.org/wiki/Herfindahl_index">Herfindahl index</a></h2>
+	<p class="large" style="font-size: 2.5em; color:#000; margin-bottom: 0" id="herfindahl"></p>
+</div>
+
+<script type="text/javascript">
+$(document).ready( function() {  
+  var report_data = {{ data|safe }},
+    activity = "";  
+
+  // Replace DOM elements with correct content
+  $('#herfindahl').html(report_data.contribution.herfindahl.toPrecision(2));
+  $('#concentration-ratio').html(report_data.contribution.concentration.toPrecision(2));
+  $('.ia-unit').html(report_data.method.unit);
+  $('#method-name').html(report_data.method.name);
+  $('#ia-score').html(report_data.score.toPrecision(2));
+  $('#mc-median').html(report_data["monte carlo"].statistics.median.toPrecision(2));
+  $('#mc-mean').html(report_data["monte carlo"].statistics.mean.toPrecision(2));
+  $('#mc-lower').html(report_data["monte carlo"].statistics.interval[0].toPrecision(2));
+  $('#mc-upper').html(report_data["monte carlo"].statistics.interval[1].toPrecision(2));
+  for (var i = report_data.activity.length - 1; i >= 0; i--) {
+    activity = activity + "<li class=&quotlarge&quot style=&quotmargin-bottom: 0; line-height: 1.1em&quot>" + report_data.activity[i][0] + ": " + report_data.activity[i][1] + " " + report_data.activity[i][2] + "</li>"
+  };
+  $('#activity').html(activity);
+
+  // Insert graphics
+  hinton_matrix(report_data.contribution.hinton.results, report_data.contribution.hinton.total, report_data.contribution.hinton.xlabels, report_data.contribution.hinton.ylabels, "#hinton", 560, 560, 10);
+  stepped_histogram(report_data["monte carlo"], report_data.method.unit, "#ihist", 680, 300, 10);
+
+  var width = 950,
+      height = 200,
+      color = d3.scale.category20();
+
+  var treemap = d3.layout.treemap()
+      .size([width, height])
+      .value(function(d) { return d.size; });
+
+  var div = d3.select("#treemap").append("div")
+      .style("position", "relative")
+      .style("width", width + "px")
+      .style("height", height + "px");
+
+  var cell_color_scale = d3.scale.category20();
+
+  div.data([report_data.contribution.treemap]).selectAll("div")
+    .data(treemap.nodes)
+  .enter().append("div")
+    .attr("class", "cell")
+    .attr("title", function(d) { return d.children ? null : d.name; })
+    .style("font-size", "14px")
+    .style("background", function(d, i) { return cell_color_scale(i % 20); }) // d.children ? color(d.name) : null; })
+    .call(cell)
+    .text(function(d) { return d.children ? null : d.name; });
+
+  function cell() {
+    this
+        .style("left", function(d) { return d.x + "px"; })
+        .style("top", function(d) { return d.y + "px"; })
+        .style("width", function(d) { return Math.max(0, d.dx - 1) + "px"; })
+        .style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
+  }
+});
+</script>
+{% endblock %}

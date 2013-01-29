@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 
+{% block extrahead %}
+<style>
+.ui-dialog-titlebar-close{
+    display: none;
+}
+</style>
+{% endblock %}
+
 {% block body %}
 <h1>Define the functional unit to assess</h1>
 <div class="span-7 colborder">
@@ -64,14 +72,37 @@
 </div>
 <hr>
 <div>
-    <form action="/lca" method="post">
+    <form action="/lca" method="post" name="calculate-form">
         <input type="hidden" name="activity" value="" id="hidden-activity">
         <input type="hidden" name="method" value="" id="hidden-method">
         <button type="submit">Calculate!</button>
     </form>
 </div>
+
+<div id="in-progress" title="Calculation in progress">The LCA calculation has been started. Please wait until it finishes, and you will be redirected to the report.</div>
+
 <script>
 $(document).ready(function() {
+    $("#in-progress").dialog({
+      height: 140,
+      modal: true,
+      autoOpen: false,
+      closeOnEscape: false
+    });
+
+    $('form[name=calculate-form]').submit( function (e) {
+        e.preventDefault();
+        $('#in-progress').dialog("open");
+        $.ajax({
+            type: "POST",
+            url: '{{ url_for('lca') }}',
+            data: $(this).serialize(),
+            success: function (a) {
+              document.location.href='/report/' + a;
+            }
+        });
+    });
+
     $("#activity-input").prop('disabled', true);
     $('#selected-activities').dataTable({
         "bJQueryUI": true

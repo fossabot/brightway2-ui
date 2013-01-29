@@ -2,7 +2,8 @@
 from __future__ import division
 from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper, reset_meta
-from bw2analyzer import ContributionAnalysis, DatabaseExplorer
+from bw2analyzer import ContributionAnalysis, DatabaseExplorer, \
+    SerializedLCAReport
 from bw2calc import LCA, ParallelMonteCarlo
 from bw2calc.speed_test import SpeedTest
 from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
@@ -282,42 +283,20 @@ def lca():
                 request.form["activity"])
             ])
         method = tuple(JsonWrapper.loads(request.form["method"]))
-        context = {}
-        lca = LCA(fu, method)
-        lca.lci()
-        lca.lcia()
-        rt, rb = lca.reverse_dict()
-        ca = ContributionAnalysis()
-        # Monte Carlo
-        iterations = 10000
-        mc = np.array(ParallelMonteCarlo(fu, method, iterations=iterations
-            ).calculate())
-        mc.sort()
-        # Filter out the outliers
-        one_percent = int(0.01 * iterations)
-        mc = mc[one_percent:-one_percent]
-        mc_data = [(float(x), float(y)) for x, y in zip(*np.histogram(
-            mc, bins=max(100, min(20, int(math.sqrt(iterations))))))]
-        context.update({
-            "mc_median": float(np.median(mc)),
-            "mc_mean": float(np.average(mc)),
-            "mc_lower": float(mc[int(0.025 * iterations)]),
-            "mc_upper": float(mc[int(0.975 * iterations)]),
-            "mc_data": JsonWrapper.dumps(mc_data),
-            "herfindahl": ca.herfindahl_index(
-                lca.characterized_inventory.data, lca.score),
-            "concentration_ratio": ca.concentration_ratio(
-                lca.characterized_inventory.data, lca.score),
-            "hinton_data": JsonWrapper.dumps(ca.hinton_matrix(lca)),
-            "treemap_data": JsonWrapper.dumps(ca.d3_treemap(
-                lca.characterized_inventory.data, rb, rt)),
-            "ia_score": float(lca.score),
-            "ia_unit": methods[method]["unit"],
-            "ia_method": ": ".join(method),
-            "fu": [(ca.get_name(k), "%.2g" % v, ca.db_names[k[0]][k][
-                "unit"]) for k, v in fu.iteritems()],
-            })
-        return render_template("lca.html", **context)
+        iterations = config.p.get("iterations", 10000)
+        cpu_count = config.p.get("cpu_cores", None)
+        report = SerializedLCAReport(fu, method, iterations, cpu_count)
+        report.calculate()
+        report.write()
+        # TODO: upload?
+        return report.uuid
+
+
+@app.route('/report/<uuid>')
+def report(uuid):
+    data = open(os.path.join(
+        config.dir, "reports", "report.%s.json" % uuid)).read()
+    return render_template("report.html", data=data)
 
 
 #############

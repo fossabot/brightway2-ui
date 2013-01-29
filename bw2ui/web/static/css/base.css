@@ -38,6 +38,12 @@ h1, h2, h3, h4 {
     fill: none;
 }
 
+.isline {
+    stroke: forestgreen;
+    stroke-width: 2;
+    fill: none;
+}
+
 .indicator {
     stroke: red;
     stroke-width: 1;
