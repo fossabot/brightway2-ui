@@ -11,7 +11,7 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
   --nobrowser   Don't automatically open a browser tab.
-  --debug       Use Werkzeug debug mode (not recommended).
+  --debug       Use Werkzeug debug mode (only for development).
   --insecure    Allow outside connections (insecure!). Not with --debug.
 
 """
@@ -19,7 +19,6 @@ from bw2ui.web import bw2webapp
 from bw2ui.utils import clean_jobs_directory
 from docopt import docopt
 from werkzeug.serving import run_simple
-import random
 import threading
 import webbrowser
 
@@ -37,8 +36,9 @@ if __name__ == "__main__":
 
     kwargs = {
         "processes": args.get("<processes>", 0) or 3,
-        "use_debugger": args["--debug"]
     }
 
-    # run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
-    bw2webapp.run(debug=False)
+    if args["--debug"]:
+        bw2webapp.run(debug=False)
+    else:
+        run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
