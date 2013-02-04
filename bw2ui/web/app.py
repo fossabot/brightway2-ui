@@ -287,8 +287,18 @@ def lca():
         cpu_count = config.p.get("cpu_cores", None)
         report = SerializedLCAReport(fu, method, iterations, cpu_count)
         report.calculate()
+        if config.p.get("upload_reports", False) and \
+                config.p.get("report_server_url", None):
+            url = config.p["report_server_url"]
+            if url[-1] != "/":
+                url += "/"
+            r = requests.post(url + "upload",
+                data=JsonWrapper.dumps(report.report),
+                headers={'content-type': 'application/json'}
+                )
+            if r.status_code == 200:
+                report.report["metadata"]["online"] = url + "report/" + report.uuid
         report.write()
-        # TODO: upload?
         return report.uuid
 
 

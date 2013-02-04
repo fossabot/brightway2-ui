@@ -17,6 +17,7 @@
 {% endblock %}
 
 {% block body %}
+<div id="online-report"></div>
 <div class="span-15 colborder">
 	<h2 style="margin-bottom: 0">Functional unit:</h2>
 	<ul style="margin-bottom: 0" id="activity"></ul>
@@ -50,9 +51,9 @@
 </div>
 
 <script type="text/javascript">
-$(document).ready( function() {  
+$(document).ready( function() {
   var report_data = {{ data|safe }},
-    activity = "";  
+    activity = "";
 
   // Replace DOM elements with correct content
   $('#herfindahl').html(report_data.contribution.herfindahl.toPrecision(2));
@@ -68,6 +69,10 @@ $(document).ready( function() {
     activity = activity + "<li class=&quotlarge&quot style=&quotmargin-bottom: 0; line-height: 1.1em&quot>" + report_data.activity[i][0] + ": " + report_data.activity[i][1] + " " + report_data.activity[i][2] + "</li>"
   };
   $('#activity').html(activity);
+
+  if ("online" in report_data.metadata) {
+    $("#online-report").html('<p class="success">This report also available online: <a href="' + report_data.metadata.online + '">' + report_data.metadata.online + '</a></p>');
+  };
 
   // Insert graphics
   hinton_matrix(report_data.contribution.hinton.results, report_data.contribution.hinton.total, report_data.contribution.hinton.xlabels, report_data.contribution.hinton.ylabels, "#hinton", 560, 560, 10);
