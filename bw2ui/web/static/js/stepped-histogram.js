@@ -3,8 +3,8 @@ var stepped_histogram = function (data, xlabel, id, w, h, padding) {
     x_max = d3.max(data.histogram, function (d) { return d[0]; }),
     x_min = d3.min(data.histogram, function (d) { return d[0]; }),
     median = data.statistics.median,
-    upper = data.statistics.interval[0],
-    lower = data.statistics.interval[1];
+    lower = data.statistics.interval[0],
+    upper = data.statistics.interval[1];
 
   var y = d3.scale.linear()
     .range([h - padding, padding])
@@ -49,7 +49,7 @@ var stepped_histogram = function (data, xlabel, id, w, h, padding) {
   var indicator_line = d3.svg.line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); });
-  
+
   svg.append("svg:g")
     .append("svg:path")
     .attr("class", "indicator")

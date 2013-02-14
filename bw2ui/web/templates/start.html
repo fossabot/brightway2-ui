@@ -27,7 +27,7 @@
   <h1>Great, that worked!</h1>
   <h3>Let's import the basic data needed for Brightway2</h3>
   <p>Please be patient - this might take a bit, depending on your internet connection...</p>
-  <button id="import-biosphere">Import basic metadata</button>
+  <button id="import-biosphere-button">Import basic metadata</button>
 </div>
 
 <div id="success" class="span-24 clear">
@@ -44,24 +44,25 @@ function fpselector (a) {
 };
 </script>
 <script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
-<script type="text/javascript">      
-$(document).ready( function() {        
+<script type="text/javascript">
+$(document).ready( function() {
   $("#submit-path").hide();
   $("#import-biosphere").hide();
   $("#success").hide();
 
   $('#fp').fileTree({
-    root: '/', 
-    script: '/fp-api', 
-    folderEvent: 'click', 
-    multiFolder: false 
-    }, 
-    function(file) { 
+    root: '/',
+    script: '/fp-api',
+    folderEvent: 'click',
+    multiFolder: false
+    },
+    function(file) {
       console.log(file);
     }
   );
 
-  $('#import-biosphere').click(function () {
+  $('#import-biosphere-button').click(function () {
+    $("#import-biosphere-button").hide();
     $.ajax({
       type: "GET",
       url: "/start/biosphere",

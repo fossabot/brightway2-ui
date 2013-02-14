@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 from brightway2 import config, databases, methods, Database, Method, \
-    JsonWrapper, reset_meta
-from bw2analyzer import ContributionAnalysis, DatabaseExplorer, \
-    SerializedLCAReport
-from bw2calc import LCA, ParallelMonteCarlo
+    JsonWrapper, set_data_dir, setup
+from bw2analyzer import DatabaseExplorer, SerializedLCAReport
 from bw2calc.speed_test import SpeedTest
 from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
@@ -12,12 +10,8 @@ from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
-import math
 import multiprocessing
-import numpy as np
 import os
-import platform
-import requests
 import urllib2
 
 
@@ -113,39 +107,13 @@ def fp_api():
 def set_path():
     path = urllib2.unquote(request.form["path"])
     dirname = urllib2.unquote(request.form["dirname"])
-    dirpath = os.path.join(path, dirname)
-    if not os.path.exists(dirpath):
-        os.mkdir(dirpath)
-
-    user_dir = os.path.expanduser("~")
-    if platform.system == "Windows":
-        filename = "brightway2path.txt"
-    else:
-        filename = ".brightway2path"
-    with open(os.path.join(user_dir, filename), "w") as f:
-        f.write(dirpath)
-
-    config.reset()
-    config.is_temp_dir = False
-    config.create_basic_directories()
-    reset_meta()
+    set_data_dir(os.path.join(path, dirname))
     return "1"
 
 
 @app.route('/start/biosphere')
 def install_biosphere():
-    # Download and format data
-    keys, values = JsonWrapper.loads(
-        requests.get("http://mutel.org/biosphere.json").content)
-    data = dict(zip([tuple(x) for x in keys], values))
-    biosphere = Database("biosphere")
-    biosphere.register(
-        format=["Handmade", -1],
-        depends=[],
-        num_processes=len(data),
-        )
-    biosphere.write(data)
-    biosphere.process()
+    setup()
     return "1"
 
 
@@ -287,17 +255,11 @@ def lca():
         cpu_count = config.p.get("cpu_cores", None)
         report = SerializedLCAReport(fu, method, iterations, cpu_count)
         report.calculate()
-        if config.p.get("upload_reports", False) and \
-                config.p.get("report_server_url", None):
-            url = config.p["report_server_url"]
-            if url[-1] != "/":
-                url += "/"
-            r = requests.post(url + "upload",
-                data=JsonWrapper.dumps(report.report),
-                headers={'content-type': 'application/json'}
-                )
-            if r.status_code == 200:
-                report.report["metadata"]["online"] = url + "report/" + report.uuid
+        try:
+            report.upload()
+        except:
+            # No online report no cry
+            pass
         report.write()
         return report.uuid
 

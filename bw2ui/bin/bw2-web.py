@@ -18,7 +18,7 @@ Options:
 from bw2ui.web import bw2webapp
 from bw2ui.utils import clean_jobs_directory
 from docopt import docopt
-from werkzeug.serving import run_simple
+# from werkzeug.serving import run_simple
 import threading
 import webbrowser
 
@@ -38,7 +38,8 @@ if __name__ == "__main__":
         "processes": args.get("<processes>", 0) or 3,
     }
 
-    if args["--debug"]:
-        bw2webapp.run(debug=False)
-    else:
-        run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
+    # if args["--debug"]:
+    # run_simple disabled because multiple workers cause cache conflicts...
+    bw2webapp.run(debug=False)
+    # else:
+    #     run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
