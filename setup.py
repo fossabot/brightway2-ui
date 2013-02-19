@@ -22,8 +22,8 @@ setup(
   author="Chris Mutel",
   author_email="cmutel@gmail.com",
   license=open('LICENSE.txt').read(),
-  install_requires=["brightway2", "docopt", "flask", "requests", "bw-stats-toolkit", \
-    "fuzzywuzzy"],
+  install_requires=["brightway2>=0.9.0-alpha2", "docopt", "flask", \
+    "bw-stats-toolkit>=0.7", "fuzzywuzzy"],
   scripts=["bw2ui/bin/bw2-web.py", "bw2ui/bin/bw2-controller.py"],
   url="https://bitbucket.org/cmutel/brightway2-ui",
   long_description=open('README.rst').read(),

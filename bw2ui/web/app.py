@@ -10,6 +10,7 @@ from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
+import json
 import multiprocessing
 import os
 import urllib2
@@ -200,6 +201,20 @@ def change_settings():
 def speed_test():
     st = SpeedTest()
     return str(250 * int(40 * st.ratio()))
+
+
+@app.route('/edit/<database>/<code>/raw', methods=["GET", "POST"])
+def raw_edit(database, code):
+    print database
+    print code
+    if database not in databases:
+        return abort(404)
+    try:
+        data = json.dumps(Database(database).load()[(database, code)], indent=2)
+    except KeyError:
+        return abort(404)
+    print data
+    return render_template("edit-raw.html", data=data)
 
 ###########
 ### LCA ###
