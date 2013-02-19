@@ -40,6 +40,6 @@ if __name__ == "__main__":
 
     # if args["--debug"]:
     # run_simple disabled because multiple workers cause cache conflicts...
-    bw2webapp.run(debug=False)
+    bw2webapp.run(debug=args["--debug"])
     # else:
     #     run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
