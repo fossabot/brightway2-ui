@@ -12,7 +12,7 @@
   <fieldset>
     <legend>Monte Carlo</legend>
     <p>Number of CPU cores to use (maximum <b>{{ cpu_count }}</b>): <br><input type="number" name="cpu-cores" min="1" max="{{ cpu_count }}" step="1" value="{% if config.p.cpu_cores %}{{ config.p.cpu_cores }}{% else %}{{ cpu_count }}{% endif %}"></p>
-    <p>Number of Monte Carlo iterations in a calculation (default <b>10000</b>, minimum: <b>100</b>): <br> <button id="speedtest">Set this value based on my computer</button> <input name="iterations" type="number" value="{% if config.p.default_iterations %}{{ config.p.default_iterations }}{% else %}10000{% endif %}" min="100"> </p>
+    <p>Number of Monte Carlo iterations in a calculation (default <b>10000</b>, minimum: <b>100</b>): <br> <button id="speedtest">Set this value based on my computer</button> <input name="iterations" type="number" value="{% if config.p.iterations %}{{ config.p.iterations }}{% else %}10000{% endif %}" min="100"> </p>
   </fieldset>
   </div>
   <div class="span-12 last">
@@ -25,11 +25,11 @@
   </div>
 </form>
 
-<script type="text/javascript">      
-$(document).ready( function() {        
+<script type="text/javascript">
+$(document).ready( function() {
   $('#speedtest').click( function (e) {
     e.preventDefault();
-    $("#speedtest").html("Working...");    
+    $("#speedtest").html("Working...");
     $.ajax({
       type: "GET",
       url: "/speedtest",
