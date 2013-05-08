@@ -8,6 +8,7 @@ from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
 from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
+from urllib import unquote as _unquote
 from utils import get_job_id, get_job, set_job_status, json_response
 import itertools
 import json
@@ -15,6 +16,17 @@ import multiprocessing
 import os
 import urllib2
 
+
+def jqfilepicker_unquote(source):
+    """
+Stupid Javascript (insert joke here...) and jQueryFilePicker
+http://stackoverflow.com/questions/300445/how-to-unquote-a-urlencoded-unicode-string-in-python
+https://github.com/simogeo/Filemanager/issues/40
+    """
+    result = _unquote(source)
+    if '%u' in result:
+        result = result.replace('%u', '\\u').decode('unicode_escape')
+    return result
 
 app = Flask(__name__)
 
@@ -69,7 +81,7 @@ def fp_test():
 @app.route("/fp-api", methods=["POST"])
 def fp_api():
     full = bool(request.args.get("full", False))
-    path = urllib2.unquote(request.form["dir"])
+    path = jqfilepicker_unquote(request.form["dir"])
     try:
         root, dirs, files = os.walk(path).next()
     except StopIteration:
@@ -87,14 +99,14 @@ def fp_api():
             "dir": True,
             "path": os.path.join(root, dir_name),
             "name": dir_name
-            })
+        })
     for file_name in files:
         data.append({
             "dir": False,
             "ext": file_name.split(".")[-1].lower(),
             "path": os.path.join(root, file_name),
             "name": file_name
-            })
+        })
     return render_template("fp-select.html", dirtree=data)
 
 #######################
