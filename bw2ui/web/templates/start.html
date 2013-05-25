@@ -51,7 +51,7 @@ $(document).ready( function() {
   $("#success").hide();
 
   $('#fp').fileTree({
-    root: '/',
+    root: {{ root_path|safe }},
     script: '/fp-api',
     folderEvent: 'click',
     multiFolder: false

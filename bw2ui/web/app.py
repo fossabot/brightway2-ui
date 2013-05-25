@@ -85,9 +85,13 @@ def fp_api():
     try:
         root, dirs, files = os.walk(path).next()
     except StopIteration:
-        # Only files from now on...
-        root, dirs = path, []
-        files = os.listdir(root)
+        try:
+            # Only files from now on...
+            root, dirs = path, []
+            files = os.listdir(root)
+        except:
+            # Don't have permissions for this directory or other OS error
+            files = []
     data = []
     files = [x for x in files if x[0] != "."]
     if not full and len(files) > 20:
@@ -130,10 +134,7 @@ def install_biosphere():
 
 @app.route('/start')
 def start():
-    return render_template("start.html")
-    """
-    You are currently saving your work in a temporary directory that can be deleted at any time. You can let Brightway2 create a workspace in your home directory, or you can specify a different directory by typing in the full path below:
-    """
+    return render_template("start.html", root_path=json.dumps(os.path.abspath("/")))
 
 #################
 ### Importing ###
