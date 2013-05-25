@@ -14,6 +14,7 @@ Usage:
   bw2-controller.py import <path> <name>
   bw2-controller.py export <name> [--include-dependencies]
   bw2-controller.py setup
+  bw2-controller.py upload_logs [COMMENT]
 
 Options:
   -h --help     Show this screen.

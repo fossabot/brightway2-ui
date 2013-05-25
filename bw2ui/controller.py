@@ -2,6 +2,7 @@
 from brightway2 import databases, methods, Database, config
 from bw2data.io import EcospoldImporter, download_biosphere, \
     BW2PackageImporter, BW2PackageExporter
+from bw2data.logs import upload_logs_to_server
 from errors import UnknownAction, UnknownDatabase
 import datetime
 
@@ -18,7 +19,7 @@ def strfdelta(tdelta):
 class Controller(object):
     def dispatch(self, **kwargs):
         options = ("list", "details", "copy", "backup", "validate", "versions",
-            "revert", "remove", "export", "setup")
+            "revert", "remove", "export", "setup", "upload_logs")
         for option in options:
             if kwargs[option]:
                 return getattr(self, option)(kwargs)
@@ -85,7 +86,14 @@ class Controller(object):
         path = BW2PackageExporter().export(name, dependencies)
         return u"%s exported to Brightway package: %s" % (name, path)
 
-    def setup(self):
+    def setup(self, kwargs):
         config.create_basic_directories()
         download_biosphere()
         return u"Brightway2 setup successful"
+
+    def upload_logs(self, kwargs):
+        response = upload_logs_to_server({'comment': kwargs.get('COMMENT', "")})
+        if response.text == "OK":
+            return "Logs uploaded successfully"
+        else:
+            return "There was a problem uploading the log files"
