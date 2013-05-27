@@ -128,7 +128,7 @@ def set_path():
 
 @app.route('/start/biosphere')
 def install_biosphere():
-    setup()
+    bw2setup()
     return "1"
 
 
