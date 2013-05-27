@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 from brightway2 import config, databases, methods, Database, Method, \
-    JsonWrapper, set_data_dir, setup
+    JsonWrapper, set_data_dir, bw2setup
 from bw2analyzer import DatabaseExplorer, SerializedLCAReport
 from bw2calc.speed_test import SpeedTest
 from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
