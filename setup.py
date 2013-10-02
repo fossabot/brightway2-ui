@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bw2ui',
-    version="0.6.1.3",
+    version="0.7",
     packages=["bw2ui", "bw2ui.web"],
     package_data={'bw2ui.web': [
         "static/blueprint/*.css",
@@ -12,6 +12,9 @@ setup(
         "static/jqueryFileTree/*.js",
         "static/jqueryFileTree/images/*.png",
         "static/jqueryFileTree/images/*.gif",
+        "static/jsoneditor/*.css",
+        "static/jsoneditor/*.js",
+        "static/jsoneditor/*.png",
         "static/img/*.png",
         "static/img/*.ico",
         "static/img/*.jpg",
@@ -22,7 +25,7 @@ setup(
     author="Chris Mutel",
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
-    install_requires=["brightway2>=0.9.1", "docopt", "flask",
+    install_requires=["brightway2>=0.10", "docopt", "flask",
                       "bw-stats-toolkit>=0.7", "fuzzywuzzy"],
     scripts=["bw2ui/bin/bw2-web.py", "bw2ui/bin/bw2-controller.py"],
     url="https://bitbucket.org/cmutel/brightway2-ui",

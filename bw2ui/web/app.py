@@ -4,7 +4,7 @@ from brightway2 import config, databases, methods, Database, Method, \
     JsonWrapper, set_data_dir, bw2setup
 from bw2analyzer import DatabaseExplorer, SerializedLCAReport
 from bw2calc.speed_test import SpeedTest
-from bw2data.io import EcospoldImporter, EcospoldImpactAssessmentImporter
+from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
 from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
@@ -148,7 +148,7 @@ def import_database():
     else:
         path = urllib2.unquote(request.form["path"])
         name = urllib2.unquote(request.form["name"])
-        EcospoldImporter().importer(path, name)
+        Ecospold1Importer().importer(path, name)
         return "1"
 
 
@@ -216,8 +216,6 @@ def speed_test():
 
 @app.route('/edit/<database>/<code>/raw', methods=["GET", "POST"])
 def raw_edit(database, code):
-    print database
-    print code
     if database not in databases:
         return abort(404)
     try:
@@ -227,10 +225,24 @@ def raw_edit(database, code):
     print data
     return render_template("edit-raw.html", data=data)
 
+@app.route("/view/<database>/<code>")
+def json_editor(database, code):
+    print database, code
+    db = Database(database)
+    if database not in databases:
+        print "db not found"
+        return abort(404)
+    data = Database(database).load()
+    try:
+        print (database, code)
+        data = data[(database, code)]
+    except KeyError:
+        return abort(404)
+    return render_template("jsoneditor.html", jsondata=json.dumps(data))
+
 ###########
 ### LCA ###
 ###########
-
 
 @app.route('/database/<name>/names')
 def activity_names(name):

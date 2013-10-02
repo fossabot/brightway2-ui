@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from brightway2 import databases, methods, Database, config
-from bw2data.io import EcospoldImporter, download_biosphere, \
+from bw2data.io import Ecospold1Importer, download_biosphere, \
     BW2PackageImporter, BW2PackageExporter
 from bw2data.logs import upload_logs_to_server
 from errors import UnknownAction, UnknownDatabase
@@ -78,7 +78,7 @@ class Controller(object):
 
     def importer(self, kwargs):
         return
-        # EcospoldImporter().importer(path, name)
+        # Ecospold1Importer().importer(path, name)
 
     def export(self, kwargs):
         name = self.get_name(kwargs)
