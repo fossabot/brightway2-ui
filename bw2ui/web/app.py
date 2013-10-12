@@ -227,14 +227,10 @@ def raw_edit(database, code):
 
 @app.route("/view/<database>/<code>")
 def json_editor(database, code):
-    print database, code
-    db = Database(database)
     if database not in databases:
-        print "db not found"
         return abort(404)
     data = Database(database).load()
     try:
-        print (database, code)
         data = data[(database, code)]
     except KeyError:
         return abort(404)
