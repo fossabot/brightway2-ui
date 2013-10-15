@@ -13,7 +13,7 @@ Usage:
   bw2-controller.py remove <name>
   bw2-controller.py import <path> <name>
   bw2-controller.py export <name> [--include-dependencies]
-  bw2-controller.py setup
+  bw2-controller.py setup [--data-dir=<datadir>]
   bw2-controller.py upload_logs [COMMENT]
 
 Options:

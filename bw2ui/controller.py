@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from brightway2 import databases, methods, Database, config
+from brightway2 import databases, methods, Database, config, reset_meta
 from bw2data.io import Ecospold1Importer, download_biosphere, \
     BW2PackageImporter, BW2PackageExporter
 from bw2data.logs import upload_logs_to_server
+from bw2data.utils import Fore
 from errors import UnknownAction, UnknownDatabase
 import datetime
-
+import os
+import sys
 
 def strfdelta(tdelta):
     """From http://stackoverflow.com/questions/8906926/formatting-python-timedelta-objects"""
@@ -87,9 +89,24 @@ class Controller(object):
         return u"%s exported to Brightway package: %s" % (name, path)
 
     def setup(self, kwargs):
+        if kwargs['--data-dir']:
+            data_dir = unicode(kwargs['--data-dir'])
+            if os.path.exists(data_dir):
+                sys.exit(Fore.RED + "Error" + Fore.RESET + ": This directory already exists")
+            elif not os.access(os.path.abspath(os.path.join(data_dir, "..")), os.W_OK):
+                sys.exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
+                return
+            print "\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):",
+            response = raw_input()
+            if response != "y":
+                sys.exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
+                return
+            os.mkdir(data_dir)
+            config.dir = data_dir
+            reset_meta()
         config.create_basic_directories()
         download_biosphere()
-        return u"Brightway2 setup successful"
+        sys.exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)
 
     def upload_logs(self, kwargs):
         response = upload_logs_to_server({'comment': kwargs.get('COMMENT', "")})
