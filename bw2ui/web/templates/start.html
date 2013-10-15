@@ -11,6 +11,14 @@
     <h3 id="fp-selected">1. Click to select the directory that Brightway2 data will be saved in</h3>
     <p>You <b>must</b> have permission to write to this directory!</p>
     <p>Note: Not all files are shown! You are selecting a directory, not files...</p>
+    {% if windows %}
+      <h3>Change the drive (Windows only)</h3>
+      <select id="driveletter">
+      {% for letter in drive_letters %}
+        <option value="{{ letter }}">{{ letter }}</option>
+      {% endfor %}
+      </select>
+    {% endif %}
     <div id="fp"></div>
   </div>
   <div class="span-8 last">
@@ -85,6 +93,21 @@ $(document).ready( function() {
       }
     });
   });
+});
+
+$(function() {
+  $("#driveletter").change(function() {
+      var letter = $(this).val();
+      $('#fp').html("");
+      $('#fp').fileTree({
+        root: letter,
+        script: '/fp-api',
+        folderEvent: 'click',
+        multiFolder: false
+        },
+        function(file) { console.log(file); }
+      );
+  })
 });
 </script>
 {% endblock %}

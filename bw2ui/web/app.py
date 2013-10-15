@@ -17,6 +17,11 @@ import os
 import urllib2
 
 
+def get_windows_drive_letters():
+    import win32api
+    return [x for x in win32api.GetLogicalDriveStrings().split('\000') if x]
+
+
 def jqfilepicker_unquote(source):
     """
 Stupid Javascript (insert joke here...) and jQueryFilePicker
@@ -134,7 +139,16 @@ def install_biosphere():
 
 @app.route('/start')
 def start():
-    return render_template("start.html", root_path=json.dumps(os.path.abspath("/")))
+    if config._windows:
+        windows, drive_letters = True, get_windows_drive_letters()
+    else:
+        windows, drive_letters = False, []
+    return render_template(
+        "start.html",
+        root_path=json.dumps(os.path.abspath("/")),
+        windows=windows,
+        drive_letters=drive_letters
+    )
 
 #################
 ### Importing ###
