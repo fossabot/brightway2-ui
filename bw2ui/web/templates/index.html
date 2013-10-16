@@ -65,7 +65,11 @@ var databasesColumns = [{
 var methodData = {{ methods|safe }};
 var databasesData = {{ databases|safe }};
 
-BackgridTable(methodData, methodColumns, "#methods-table", ['name'], "Filter by name", 20);
-BackgridTable(databasesData, databasesColumns, "#databases-table", ['name'], "Filter by name", 10);
+var callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+BackgridTable(methodData, methodColumns, "#methods-table", ['name'], "Filter by name", 20, callback);
+BackgridTable(databasesData, databasesColumns, "#databases-table", ['name'], "Filter by name", 10, callback);
 </script>
 {% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Database: {{ name }}</h1>
+<h2>Version: {{ meta.version }}</h2>
+{% if depends %}
+<h2>Depends on:</h2>
+<ul>
+    {% for d in depends %}
+    <li><a href="{{ d.url }}">{{ d.name }}</a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div id="bgtable"></div>
+
+<script type="text/javascript">
+var columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}, {
+    name: "num_exchanges",
+    label: "Number of exchanges",
+    cell: "integer",
+    editable: false
+}];
+
+var data = {{ data|safe }};
+
+var callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+BackgridTable(data, columns, "#bgtable", ['name'], "Filter by name", 50, callback);
+</script>
+{% endblock %}

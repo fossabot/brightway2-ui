@@ -187,7 +187,8 @@ def index():
     dbs = [{
         "name": key,
         "number": value["number"],
-        "version": value["version"]
+        "version": value["version"],
+        "url": url_for('database_explorer', name=key)
         } for key, value in databases.iteritems()]
     dbs.sort(key=lambda x: x['name'])
     ms = [{
@@ -361,18 +362,33 @@ def filter_sort_process_database(data, filter=None, order=None):
 
 @app.route("/database/<name>")
 def database_explorer(name):
-    if name not in databases:
+    try:
+        meta = databases[name]
+    except KeyError:
         return abort(404)
-    db = Database(name)
-    data = db.load()
-    if request.args.get("q", None):
-        names = [x["name"] for x in data.values()]
-        names = process.extract(request.args.get("q"), names, limit=20)
-        data = filter_sort_process_database(data, filter=names, order=names)
-    else:
-        data = filter_sort_process_database(data)
-    return render_template("database.html",
-        name=name, data=JsonWrapper.dumps(data))
+    data = Database(name).load()
+    depends = [{
+        'name': obj,
+        'url': url_for('database_explorer', name=obj)
+    } for obj in sorted(meta['depends'])]
+    json_data = [{
+        'name': value['name'],
+        'categories': ",".join(value.get('categories', [])),
+        'location': value.get('location', ''),
+        'unit': value.get('unit', ''),
+        'url': url_for('json_editor', database=name, code=key[1]),
+        # 'url_raw': url_for('raw_edit', database=name, code=key),
+        'num_exchanges': len(value.get('exchanges', [])),
+        'key': key
+        } for key, value in data.iteritems()]
+    json_data.sort(key = lambda x: x['name'])
+    return render_template(
+        "database.html",
+        meta=meta,
+        name=name,
+        depends=depends,
+        data=JsonWrapper.dumps(json_data)
+    )
 
 
 def short_name(name):

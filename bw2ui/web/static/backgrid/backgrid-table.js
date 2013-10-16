@@ -1,4 +1,15 @@
-var BackgridTable = function (data, columns, selector, fields, placeholder, nrows) {
+// From https://github.com/wyuenho/backgrid/issues/62
+var ClickableRow = Backgrid.Row.extend({
+  events: {
+    "click": "onClick"
+  },
+  onClick: function () {
+    Backbone.trigger("rowclicked", this.model);
+  }
+});
+
+
+var BackgridTable = function (data, columns, selector, fields, placeholder, nrows, click_callback) {
   var bgModel = Backbone.Model.extend({});
   var bgCollection = Backbone.PageableCollection.extend({
     model: bgModel,
@@ -11,7 +22,8 @@ var BackgridTable = function (data, columns, selector, fields, placeholder, nrow
   var collection = new bgCollection(data);
   var grid = new Backgrid.Grid({
     columns: columns,
-    collection: collection
+    collection: collection,
+    row: ClickableRow
   });
 
   var element = $(selector);
@@ -33,4 +45,8 @@ var BackgridTable = function (data, columns, selector, fields, placeholder, nrow
   element.prepend(filter.render().$el);
 
   filter.$el.css({float: "right", margin: "20px"});
+
+  if (click_callback) {
+    Backbone.on("rowclicked", click_callback);
+  }
 };
