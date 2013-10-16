@@ -7,23 +7,7 @@
 {% block body %}
 <div class="span-11 colborder">
     <h2>Installed databases</h2>
-    <p>(click on a database to get more options)</p>
-    <table id="installed-databases">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Version</th>
-                <th># activities</th>
-            </tr>
-        </thead>
-        <tbody>{% for row in databases %}
-            <tr>
-                <td>{{row.name}}</td>
-                <td>{{row.version}}</td>
-                <td>{{row.number}}</td>
-            </tr>{% endfor %}
-        </tbody>
-    </table>
+    <div id="databases-table"></div>
 </div>
 <div class="span-12 last">
     <p>Data directory is <i>{{ config.udir }}</i></p>
@@ -41,31 +25,47 @@
 </div>
 <hr>
 <h2>Installed LCIA methods</h2>
-<p>(click on a method to get more options)</p>
-<table id="installed-methods">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Unit</th>
-            <th># CFs</th>
-        </tr>
-    </thead>
-    <tbody>{% for row in methods %}
-        <tr>
-            <td>{{row.name}}</td>
-            <td>{{row.unit}}</td>
-            <td>{{row.num_cfs}}</td>
-        </tr>{% endfor %}
-    </tbody>
-</table>
+<div id="methods-table"></div>
 
 <script type="text/javascript">
-$('#installed-databases').dataTable({
-    "bLengthChange": false,
-    "bJQueryUI": true
-});
-$('#installed-methods').dataTable({
-    "bJQueryUI": true
-});
+var methodColumns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "num_cfs",
+    label: "Number of CFs",
+    cell: "integer",
+    editable: false
+}];
+
+var databasesColumns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "version",
+    label: "Version number",
+    cell: "integer",
+    editable: false
+}, {
+    name: "number",
+    label: "Number of activities",
+    cell: "integer",
+    editable: false
+}];
+
+var methodData = {{ methods|safe }};
+var databasesData = {{ databases|safe }};
+
+BackgridTable(methodData, methodColumns, "#methods-table", ['name'], "Filter by name", 20);
+BackgridTable(databasesData, databasesColumns, "#databases-table", ['name'], "Filter by name", 10);
 </script>
 {% endblock %}

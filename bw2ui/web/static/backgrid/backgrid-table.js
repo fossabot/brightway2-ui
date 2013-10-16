@@ -1,0 +1,36 @@
+var BackgridTable = function (data, columns, selector, fields, placeholder, nrows) {
+  var bgModel = Backbone.Model.extend({});
+  var bgCollection = Backbone.PageableCollection.extend({
+    model: bgModel,
+    state: {
+      pageSize: nrows
+    },
+    mode: "client" // page entirely on the client side
+  });
+
+  var collection = new bgCollection(data);
+  var grid = new Backgrid.Grid({
+    columns: columns,
+    collection: collection
+  });
+
+  var element = $(selector);
+  element.append(grid.render().$el);
+
+  var paginator = new Backgrid.Extension.Paginator({
+    collection: collection
+  });
+
+  element.append(paginator.render().$el);
+
+  var filter = new Backgrid.Extension.ClientSideFilter({
+    collection: collection.fullCollection,
+    fields: fields, // e.g. ['name']
+    placeholder: placeholder, // e.g. "Filter by name"
+    wait: 200
+  });
+
+  element.prepend(filter.render().$el);
+
+  filter.$el.css({float: "right", margin: "20px"});
+};

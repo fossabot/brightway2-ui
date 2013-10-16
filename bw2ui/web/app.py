@@ -189,14 +189,16 @@ def index():
         "number": value["number"],
         "version": value["version"]
         } for key, value in databases.iteritems()]
+    dbs.sort(key=lambda x: x['name'])
     ms = [{
         "name": " - ".join(key),
         "unit": value["unit"],
         "num_cfs": value["num_cfs"]
     } for key, value in methods.iteritems()]
+    ms.sort(key = lambda x: x['name'])
     context = {
-        'databases': dbs,
-        'methods': ms,
+        'databases': json.dumps(dbs),
+        'methods': json.dumps(ms),
         'config': config
         }
     return render_template("index.html", **context)
