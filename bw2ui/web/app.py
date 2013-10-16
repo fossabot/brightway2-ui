@@ -194,7 +194,8 @@ def index():
     ms = [{
         "name": " - ".join(key),
         "unit": value["unit"],
-        "num_cfs": value["num_cfs"]
+        "num_cfs": value["num_cfs"],
+        "url": url_for("method_explorer", abbreviation=value['abbreviation'])
     } for key, value in methods.iteritems()]
     ms.sort(key = lambda x: x['name'])
     context = {
@@ -436,27 +437,33 @@ def database_tree(name, code, direction="backwards"):
 #######################
 
 
-@app.route("/method-json/<name1>/<name2>/<name3>")
-def method_json(name1, name2, name3):
-    name = (name1, name2, name3)
-    print name, name in methods
-    if name not in methods:
+@app.route("/method/<abbreviation>")
+def method_explorer(abbreviation):
+    method = [key for key, value in methods.iteritems()
+        if value['abbreviation'] == abbreviation]
+    if not len(method) == 1:
         abort(404)
-    biosphere = Database("biosphere").load()
-    print "Biosphere loaded", len(biosphere)
-    cfs = [{"n": biosphere[x[0]]["name"],
-        "c": str(biosphere[x[0]]["categories"]),
-        "a": x[1]
-        } for x in Method(name).load().iteritems()]
-    cfs.sort()
-    return json_response(cfs)
-
-
-@app.route("/method/<name1>")
-@app.route("/method/<name1>/<name2>")
-@app.route("/method/<name1>/<name2>/<name3>")
-def method_explorer(name1, name2=None, name3=None):
-    return
+    method = method[0]
+    meta = methods[method]
+    json_data = []
+    for key, value, geo in Method(method).load():
+        flow = Database(key[0]).load()[key]
+        json_data.append({
+            'name': flow['name'],
+            'unit': flow.get('unit', ''),
+            'categories': ",".join(flow.get('categories', [])),
+            'cf': value['amount'] if isinstance(value, dict) else value,
+            'location': geo,
+            'url': url_for('json_editor', database=key[0], code=key[1])
+        })
+    json_data.sort(key=lambda x: x['name'])
+    return render_template(
+        "method.html",
+        name=method,
+        unit=meta['unit'],
+        description=meta['description'],
+        data=JsonWrapper.dumps(json_data)
+    )
 
 
 # use werkzeug.utils.secure_filename to check uploaded file names

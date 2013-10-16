@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Method{% for obj in name %}: {{ obj }}{% endfor %}</h1>
+<h2>Unit: {{ unit }}</h2>
+<h2>Description:</h2>
+<p>{{ description }}</p>
+
+<div id="bgtable"></div>
+
+<script type="text/javascript">
+var columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}, {
+    name: "cf",
+    label: "CF",
+    cell: "number",
+    editable: false
+}];
+
+var data = {{ data|safe }};
+
+var callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+BackgridTable(data, columns, "#bgtable", ['name'], "Filter by name", 50, callback);
+</script>
+{% endblock %}
