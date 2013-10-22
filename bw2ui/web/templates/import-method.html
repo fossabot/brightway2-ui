@@ -9,6 +9,14 @@
   <h1>Import an LCIA method</h1>
   <div class="span-15 colborder">
     <h3 id="fp-selected">Click to select the directory that the XML files are in, or a single XML file.</h3>
+    {% if windows %}
+      <h3>Change the drive (Windows only)</h3>
+      <select id="driveletter">
+      {% for letter in drive_letters %}
+        <option value="{{ letter }}" {% if letter[:2] == current_drive %}selected{% endif %}>{{ letter }}</option>
+      {% endfor %}
+      </select>
+    {% endif %}
     <div id="fp"></div>
   </div>
   <div class="span-8 last">
@@ -32,17 +40,17 @@ function fpselector (a) {
 };
 </script>
 <script src="{{ url_for('static', filename="jqueryFileTree/jqueryFileTree.js") }}"></script>
-<script type="text/javascript">      
-$(document).ready( function() {        
+<script type="text/javascript">
+$(document).ready( function() {
   $("#in-submission").hide();
 
   $('#fp').fileTree({
-    root: '/', 
-    script: '{{ url_for('fp_api') }}?full=1', 
-    folderEvent: 'click', 
-    multiFolder: false 
-    }, 
-    function(file) { 
+    root: '/',
+    script: '{{ url_for('fp_api') }}?full=1',
+    folderEvent: 'click',
+    multiFolder: false
+    },
+    function(file) {
       $("#fp-selected").text("Currently selected: " + file);
       $("#hidden-path").val(file);
     }
@@ -65,6 +73,21 @@ $(document).ready( function() {
       $("#missing-name").html('<p style="color: red">You must first select both a file/directory</p>');
     }
   });
+});
+
+$(function() {
+  $("#driveletter").change(function() {
+      var letter = $(this).val();
+      $('#fp').html("");
+      $('#fp').fileTree({
+        root: letter,
+        script: '/fp-api',
+        folderEvent: 'click',
+        multiFolder: false
+        },
+        function(file) { console.log(file); }
+      );
+  })
 });
 </script>
 {% endblock %}

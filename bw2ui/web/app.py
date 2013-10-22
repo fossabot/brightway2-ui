@@ -122,6 +122,15 @@ def fp_api():
 ### Getting started ###
 #######################
 
+def get_windows_drives():
+    if not config._windows:
+        return {'windows': False}
+    else:
+        return {
+            'windows': True,
+            'drive_letters': get_windows_drive_letters(),
+            'current_drive': os.path.splitdrive(os.getcwd())[0]
+        }
 
 @app.route('/start/path', methods=["POST"])
 def set_path():
@@ -139,15 +148,10 @@ def install_biosphere():
 
 @app.route('/start')
 def start():
-    if config._windows:
-        windows, drive_letters = True, get_windows_drive_letters()
-    else:
-        windows, drive_letters = False, []
     return render_template(
         "start.html",
         root_path=json.dumps(os.path.abspath("/")),
-        windows=windows,
-        drive_letters=drive_letters
+        **get_windows_drives()
     )
 
 #################
@@ -158,7 +162,7 @@ def start():
 @app.route("/import/database", methods=["GET", "POST"])
 def import_database():
     if request.method == "GET":
-        return render_template("import-database.html")
+        return render_template("import-database.html", **get_windows_drives())
     else:
         path = urllib2.unquote(request.form["path"])
         name = urllib2.unquote(request.form["name"])
@@ -169,7 +173,7 @@ def import_database():
 @app.route("/import/method", methods=["GET", "POST"])
 def import_method():
     if request.method == "GET":
-        return render_template("import-method.html")
+        return render_template("import-method.html", **get_windows_drives())
     else:
         path = urllib2.unquote(request.form["path"])
         EcospoldImpactAssessmentImporter().importer(path)

@@ -15,7 +15,7 @@
       <h3>Change the drive (Windows only)</h3>
       <select id="driveletter">
       {% for letter in drive_letters %}
-        <option value="{{ letter }}">{{ letter }}</option>
+        <option value="{{ letter }}" {% if letter[:2] == current_drive %}selected{% endif %}>{{ letter }}</option>
       {% endfor %}
       </select>
     {% endif %}
