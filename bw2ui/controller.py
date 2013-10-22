@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from brightway2 import databases, methods, Database, config, reset_meta
 from bw2data.io import Ecospold1Importer, download_biosphere, \
-    BW2PackageImporter, BW2PackageExporter
+    BW2PackageImporter, BW2PackageExporter, download_methods
 from bw2data.logs import upload_logs_to_server
 from bw2data.utils import Fore
 from errors import UnknownAction, UnknownDatabase
@@ -106,6 +106,7 @@ class Controller(object):
             reset_meta()
         config.create_basic_directories()
         download_biosphere()
+        download_methods()
         sys.exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)
 
     def upload_logs(self, kwargs):
