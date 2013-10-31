@@ -292,7 +292,7 @@ def get_tuple_index(t, i):
 def lca():
     if request.method == "GET":
         return render_template("select.html",
-            db_names=[x for x in databases.list if x != "biosphere"],
+            db_names=[x for x in databases.list if x != config.biosphere],
             lcia_methods=[{
                 "l1": get_tuple_index(key, 0),
                 "l2": get_tuple_index(key, 1),
