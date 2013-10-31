@@ -3,7 +3,7 @@
 """Brightway2 command line controller.
 
 Usage:
-  bw2-controller.py list [databases|methods]
+  bw2-controller.py list (databases|methods)
   bw2-controller.py details <name>
   bw2-controller.py copy <name> <newname>
   bw2-controller.py backup <name>
@@ -15,6 +15,7 @@ Usage:
   bw2-controller.py export <name> [--include-dependencies]
   bw2-controller.py setup [--data-dir=<datadir>]
   bw2-controller.py upload_logs [COMMENT]
+  bw2-controller.py color (on|off)
 
 Options:
   -h --help     Show this screen.

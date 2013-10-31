@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 from brightway2 import databases, methods, Database, config, reset_meta
 from bw2data.io import Ecospold1Importer, download_biosphere, \
     BW2PackageImporter, BW2PackageExporter, download_methods
 from bw2data.logs import upload_logs_to_server
-from bw2data.utils import Fore
+from bw2data.colors import Fore, safe_colorama
 from errors import UnknownAction, UnknownDatabase
 import datetime
 import os
 import sys
+
+
+def exit(text):
+    print(safe_colorama(text))
+    sys.exit(1)
+
 
 def strfdelta(tdelta):
     """From http://stackoverflow.com/questions/8906926/formatting-python-timedelta-objects"""
@@ -21,7 +28,7 @@ def strfdelta(tdelta):
 class Controller(object):
     def dispatch(self, **kwargs):
         options = ("list", "details", "copy", "backup", "validate", "versions",
-            "revert", "remove", "export", "setup", "upload_logs")
+            "revert", "remove", "export", "setup", "upload_logs", "color")
         for option in options:
             if kwargs[option]:
                 return getattr(self, option)(kwargs)
@@ -35,11 +42,26 @@ class Controller(object):
             raise UnknownDatabase("Can't find the database %s" % name)
         return name
 
+    def color(self, kwargs):
+        if kwargs['on']:
+            if 'no_color' in config.p:
+                del config.p['no_color']
+                config.save_preferences()
+            return u"Color turned on"
+        elif kwargs['off']:
+            config.p['no_color'] = True
+            config.save_preferences()
+            return u"Color turned off"
+        else:
+            return
+
     def list(self, kwargs):
         if kwargs['databases']:
             return databases.list
-        else:
+        elif kwargs['methods']:
             return methods.list
+        else:
+            return
 
     def details(self, kwargs):
         return databases[self.get_name(kwargs)]
@@ -92,14 +114,14 @@ class Controller(object):
         if kwargs['--data-dir']:
             data_dir = unicode(kwargs['--data-dir'])
             if os.path.exists(data_dir):
-                sys.exit(Fore.RED + "Error" + Fore.RESET + ": This directory already exists")
+                exit(Fore.RED + "Error" + Fore.RESET + ": This directory already exists")
             elif not os.access(os.path.abspath(os.path.join(data_dir, "..")), os.W_OK):
-                sys.exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
+                exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
                 return
-            print "\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):",
-            response = raw_input()
+            question_text = safe_colorama("\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):")
+            response = raw_input(question_text)
             if response != "y":
-                sys.exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
+                exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
                 return
             os.mkdir(data_dir)
             config.dir = data_dir
@@ -107,7 +129,7 @@ class Controller(object):
         config.create_basic_directories()
         download_biosphere()
         download_methods()
-        sys.exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)
+        exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)
 
     def upload_logs(self, kwargs):
         response = upload_logs_to_server({'comment': kwargs.get('COMMENT', "")})
