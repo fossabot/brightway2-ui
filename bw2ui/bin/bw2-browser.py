@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """Brightway2 database and activity browser.
-Developped by Bernhard Steubing and Chris Mutel, 2013
+Developed by Bernhard Steubing and Chris Mutel, 2013
 
 This is a command-line utility to browse, search, and filter databases.
 
@@ -601,7 +601,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         print("History exported to %(c)s%(fp)s%(R)s" % _({'fp': fp}))
 
 # SOME ADDITIONAL FUNCTIONALITY FROM THE FIRST VERSION, WHICH IS CURRENTLY NOT INCLUDED:
-# MAINLY FILTER AND UP- AND DOWNSTREAM ACTIVITIES OVER SEVERAL LEVELS 
+# MAINLY FILTER AND UP- AND DOWNSTREAM ACTIVITIES OVER SEVERAL LEVELS
     # def sort_by_name(self, unsorted_list):
     # EASIER:
     # Something like this: unsorted_list.sort(key=lambda x: x['name'])

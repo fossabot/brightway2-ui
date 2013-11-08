@@ -247,6 +247,7 @@ def raw_edit(database, code):
     print data
     return render_template("edit-raw.html", data=data)
 
+
 @app.route("/view/<database>/<code>")
 def json_editor(database, code):
     if database not in databases:
@@ -257,6 +258,21 @@ def json_editor(database, code):
     except KeyError:
         return abort(404)
     return render_template("jsoneditor.html", jsondata=json.dumps(data))
+
+
+@app.route("/delete/<database>", methods=["POST"])
+def delete_database(database):
+    if database not in databases:
+        return abort(404)
+    del databases[database]
+    return ''
+
+
+@app.route("/backup/<database>", methods=["POST"])
+def backup_database(database):
+    if database not in databases:
+        return abort(404)
+    return Database(database).backup()
 
 ###########
 ### LCA ###
@@ -392,7 +408,9 @@ def database_explorer(name):
         meta=meta,
         name=name,
         depends=depends,
-        data=JsonWrapper.dumps(json_data)
+        data=JsonWrapper.dumps(json_data),
+        backup_url = url_for('backup_database', database=name),
+        delete_url = url_for('delete_database', database=name),
     )
 
 

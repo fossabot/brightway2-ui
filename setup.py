@@ -28,7 +28,11 @@ setup(
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
     install_requires=["brightway2>=0.10"],
-    scripts=["bw2ui/bin/bw2-web.py", "bw2ui/bin/bw2-controller.py", "bw2ui/bin/bw2-browser.py"],
+    scripts=[
+        "bw2ui/bin/bw2-web.py",
+        "bw2ui/bin/bw2-controller.py",
+        "bw2ui/bin/bw2-browser.py"
+    ],
     url="https://bitbucket.org/cmutel/brightway2-ui",
     long_description=open('README.rst').read(),
     classifiers=[
