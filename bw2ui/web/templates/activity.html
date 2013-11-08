@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>{{ data.name }}</h1>
+
+<div class="span-12">
+    <ul>
+        <li>Categories: {{ data.categories }}</li>
+        <li>Unit: {{ data.unit }}</li>
+        {% if data.location %}<li>Location: {{ data.location }}</li>{% endif %}
+        {% if ref_prod %}<li>Production amount: {{ ref_prod }}</li>{% endif %}
+    </ul>
+</div>
+
+<div class="span-12 last">
+    <a href="{{ edit_url }}"><button>View raw JSON data</button></a>
+</div>
+
+<div class="clear">
+    <h2>Biosphere flows</h2>
+    <div id="biosphere-table"></div>
+
+    <h2>Technosphere flows</h2>
+    <div id="technosphere-table"></div>
+</div>
+
+<script type="text/javascript">
+var bio_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "amount",
+    label: "Amount",
+    cell: Backgrid.NumberCell.extend({decimals: 12}),
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}];
+
+var tech_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "amount",
+    label: "Amount",
+    cell: Backgrid.NumberCell.extend({decimals: 12}),
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+
+var bio_data = {{ biosphere|safe }};
+var tech_data = {{ technosphere|safe }};
+
+var callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+BackgridTable(bio_data, bio_columns, "#biosphere-table", ['name'], "Filter by name", 50, callback);
+
+BackgridTable(tech_data, tech_columns, "#technosphere-table", ['name'], "Filter by name", 50, callback);
+
+</script>
+{% endblock %}

@@ -235,29 +235,41 @@ def speed_test():
     st = SpeedTest()
     return str(250 * int(40 * st.ratio()))
 
+##############################
+### Databases and datasets ###
+##############################
 
-@app.route('/edit/<database>/<code>/raw', methods=["GET", "POST"])
-def raw_edit(database, code):
-    if database not in databases:
-        return abort(404)
+
+@app.route("/database/<name>")
+def database_explorer(name):
     try:
-        data = json.dumps(Database(database).load()[(database, code)], indent=2)
+        meta = databases[name]
     except KeyError:
         return abort(404)
-    print data
-    return render_template("edit-raw.html", data=data)
-
-
-@app.route("/view/<database>/<code>")
-def json_editor(database, code):
-    if database not in databases:
-        return abort(404)
-    data = Database(database).load()
-    try:
-        data = data[(database, code)]
-    except KeyError:
-        return abort(404)
-    return render_template("jsoneditor.html", jsondata=json.dumps(data))
+    data = Database(name).load()
+    depends = [{
+        'name': obj,
+        'url': url_for('database_explorer', name=obj)
+    } for obj in sorted(meta['depends'])]
+    json_data = [{
+        'name': value['name'],
+        'categories': ",".join(value.get('categories', [])),
+        'location': value.get('location', ''),
+        'unit': value.get('unit', ''),
+        'url': url_for('activity_dataset', database=name, code=key[1]),
+        'num_exchanges': len(value.get('exchanges', [])),
+        'key': key
+        } for key, value in data.iteritems()]
+    json_data.sort(key = lambda x: x['name'])
+    return render_template(
+        "database.html",
+        meta=meta,
+        name=name,
+        depends=depends,
+        data=JsonWrapper.dumps(json_data),
+        backup_url = url_for('backup_database', database=name),
+        delete_url = url_for('delete_database', database=name),
+    )
 
 
 @app.route("/delete/<database>", methods=["POST"])
@@ -274,27 +286,63 @@ def backup_database(database):
         return abort(404)
     return Database(database).backup()
 
+
+@app.route("/view/<database>/<code>")
+def activity_dataset(database, code):
+    if database not in databases:
+        return abort(404)
+    data = Database(database).load()
+    try:
+        data = data[(database, code)]
+    except KeyError:
+        return abort(404)
+
+    rp = [x for x in data['exchanges'] if x['type'] == "production"]
+    if len(rp) == 1:
+        rp = rp[0]['amount']
+    else:
+        rp = 0
+
+    def format_ds(key, amount):
+        # try:
+        ds = Database(key[0]).load()[key]
+        # except:
+        #     return {}
+        return {
+            'name': ds['name'],
+            'categories': ",".join(ds.get('categories', [])),
+            'location': ds.get('location', ''),
+            'unit': ds.get('unit', ''),
+            'url': url_for('activity_dataset', database=key[0], code=key[1]),
+            'amount': amount
+            }
+
+    biosphere = [format_ds(x['input'], x['amount']) for x in data['exchanges'] if x['type'] == "biosphere"]
+    technosphere = [format_ds(x['input'], x['amount']) for x in data['exchanges'] if x['type'] == "technosphere"]
+
+    return render_template(
+        "activity.html",
+        data=data,
+        ref_prod=rp,
+        edit_url=url_for("json_editor", database=database, code=code),
+        biosphere=json.dumps(biosphere),
+        technosphere=json.dumps(technosphere)
+    )
+
+@app.route("/view/<database>/<code>/json")
+def json_editor(database, code):
+    if database not in databases:
+        return abort(404)
+    data = Database(database).load()
+    try:
+        data = data[(database, code)]
+    except KeyError:
+        return abort(404)
+    return render_template("jsoneditor.html", jsondata=json.dumps(data))
+
 ###########
 ### LCA ###
 ###########
-
-@app.route('/database/<name>/names')
-def activity_names(name):
-    if name not in databases:
-        return abort(404)
-    db = Database(name)
-    data = db.load()
-    return json_response([{
-        "label": u"%s (%s, %s)" % (
-            value["name"],
-            value.get("unit", "?"),
-            value.get("location", "?")),
-        "value": {
-            "u": value["unit"],
-            "l": value["location"],
-            "n": value["name"],
-            "k": key
-        }} for key, value in data.iteritems()])
 
 
 def get_tuple_index(t, i):
@@ -343,75 +391,42 @@ def report(uuid):
     return render_template("report.html", data=data)
 
 
-#############
-### Tests ###
-#############
+###############
+### Methods ###
+###############
 
 
-@app.route('/progress')
-def progress_test():
-    job_id = get_job_id()
-    status_id = get_job_id()
-    set_job_status(job_id, {"name": "progress-test", "status": status_id})
-    set_job_status(status_id, {"status": "Starting..."})
-    return render_template("progress.html", **{"job": job_id,
-        'status': status_id})
-
-
-@app.route('/hist')
-def hist_test():
-    job_id = get_job_id()
-    status_id = get_job_id()
-    set_job_status(job_id, {"name": "hist-test", "status": status_id})
-    set_job_status(status_id, {"status": "Starting..."})
-    return render_template("hist.html", **{"job": job_id, 'status': status_id})
-
-#########################
-### Database explorer ###
-#########################
-
-
-def filter_sort_process_database(data, filter=None, order=None):
-    if order:
-        data = list(itertools.chain(
-            *[[(k, v) for k, v in data.iteritems() if v["name"] == x
-            ] for x in order]))
-    else:
-        data = data.iteritems()
-    pass
-
-
-@app.route("/database/<name>")
-def database_explorer(name):
-    try:
-        meta = databases[name]
-    except KeyError:
-        return abort(404)
-    data = Database(name).load()
-    depends = [{
-        'name': obj,
-        'url': url_for('database_explorer', name=obj)
-    } for obj in sorted(meta['depends'])]
-    json_data = [{
-        'name': value['name'],
-        'categories': ",".join(value.get('categories', [])),
-        'location': value.get('location', ''),
-        'unit': value.get('unit', ''),
-        'url': url_for('json_editor', database=name, code=key[1]),
-        # 'url_raw': url_for('raw_edit', database=name, code=key),
-        'num_exchanges': len(value.get('exchanges', [])),
-        'key': key
-        } for key, value in data.iteritems()]
-    json_data.sort(key = lambda x: x['name'])
+@app.route("/method/<abbreviation>")
+def method_explorer(abbreviation):
+    method = [key for key, value in methods.iteritems()
+        if value['abbreviation'] == abbreviation]
+    if not len(method) == 1:
+        abort(404)
+    method = method[0]
+    meta = methods[method]
+    json_data = []
+    for key, value, geo in Method(method).load():
+        flow = Database(key[0]).load()[key]
+        json_data.append({
+            'name': flow['name'],
+            'unit': flow.get('unit', ''),
+            'categories': ",".join(flow.get('categories', [])),
+            'cf': value['amount'] if isinstance(value, dict) else value,
+            'location': geo,
+            'url': url_for('activity_dataset', database=key[0], code=key[1])
+        })
+    json_data.sort(key=lambda x: x['name'])
     return render_template(
-        "database.html",
-        meta=meta,
-        name=name,
-        depends=depends,
-        data=JsonWrapper.dumps(json_data),
-        backup_url = url_for('backup_database', database=name),
-        delete_url = url_for('delete_database', database=name),
+        "method.html",
+        name=method,
+        unit=meta['unit'],
+        description=meta['description'],
+        data=JsonWrapper.dumps(json_data)
     )
+
+###################
+### Development ###
+###################
 
 
 def short_name(name):
@@ -454,39 +469,24 @@ def database_tree(name, code, direction="backwards"):
         activity=data[(name, code)]["name"],
         direction=direction.title())
 
-#######################
-### Method explorer ###
-#######################
+
+@app.route('/progress')
+def progress_test():
+    job_id = get_job_id()
+    status_id = get_job_id()
+    set_job_status(job_id, {"name": "progress-test", "status": status_id})
+    set_job_status(status_id, {"status": "Starting..."})
+    return render_template("progress.html", **{"job": job_id,
+        'status': status_id})
 
 
-@app.route("/method/<abbreviation>")
-def method_explorer(abbreviation):
-    method = [key for key, value in methods.iteritems()
-        if value['abbreviation'] == abbreviation]
-    if not len(method) == 1:
-        abort(404)
-    method = method[0]
-    meta = methods[method]
-    json_data = []
-    for key, value, geo in Method(method).load():
-        flow = Database(key[0]).load()[key]
-        json_data.append({
-            'name': flow['name'],
-            'unit': flow.get('unit', ''),
-            'categories': ",".join(flow.get('categories', [])),
-            'cf': value['amount'] if isinstance(value, dict) else value,
-            'location': geo,
-            'url': url_for('json_editor', database=key[0], code=key[1])
-        })
-    json_data.sort(key=lambda x: x['name'])
-    return render_template(
-        "method.html",
-        name=method,
-        unit=meta['unit'],
-        description=meta['description'],
-        data=JsonWrapper.dumps(json_data)
-    )
-
+@app.route('/hist')
+def hist_test():
+    job_id = get_job_id()
+    status_id = get_job_id()
+    set_job_status(job_id, {"name": "hist-test", "status": status_id})
+    set_job_status(status_id, {"status": "Starting..."})
+    return render_template("hist.html", **{"job": job_id, 'status': status_id})
 
 # use werkzeug.utils.secure_filename to check uploaded file names
 # http://werkzeug.pocoo.org/docs/utils/
