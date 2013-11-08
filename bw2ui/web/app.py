@@ -6,11 +6,9 @@ from bw2analyzer import DatabaseExplorer, SerializedLCAReport
 from bw2calc.speed_test import SpeedTest
 from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
 from flask import Flask, url_for, render_template, request, redirect, abort
-from fuzzywuzzy import process
 from jobs import JobDispatch, InvalidJob
 from urllib import unquote as _unquote
 from utils import get_job_id, get_job, set_job_status, json_response
-import itertools
 import json
 import multiprocessing
 import os
