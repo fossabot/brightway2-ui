@@ -12,7 +12,8 @@ import sys
 
 
 def exit(text):
-    print(safe_colorama(text))
+    with safe_colorama():
+        print(text)
     sys.exit(1)
 
 
