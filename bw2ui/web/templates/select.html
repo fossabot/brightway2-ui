@@ -8,6 +8,7 @@
 </style>
 {% endblock %}
 
+
 {% block body %}
 <h1>Define the functional unit to assess</h1>
 <div class="span-7 colborder">
@@ -24,51 +25,13 @@
 <div class="span-16 last">
     <h3>Selected activities:</h3>
     <p>(click to change amounts)</p>
-    <table id="selected-activities">
-        <thead>
-            <tr>
-                <th>Amount</th>
-                <th>Unit</th>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Key</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Not yet!</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
+    <div id="selected-activities"></div>
 </div>
 <hr>
 <div class="clear span-24">
     <h1>Chose the LCIA method</h1>
     <h3>Chosen method: <span id="chosen-method">(click below to chose a method)</span></h3>
-    <table id="lcia_methods">
-        <thead>
-            <tr>
-                <th>Level 1</th>
-                <th>Level 2</th>
-                <th>Level 3</th>
-                <th># CFs</th>
-                <th>Unit</th>
-            </tr>
-        </thead>
-        <tbody>{% for m in lcia_methods %}
-            <tr>
-                <td>{{m.l1}}</td>
-                <td>{{m.l2}}</td>
-                <td>{{m.l3}}</td>
-                <td>{{m.n}}</td>
-                <td>{{m.u}}</td>
-            </tr>{% endfor %}
-        </tbody>
-    </table>
+    <div id="lcia_methods"></div>
 </div>
 <hr>
 <div>
@@ -82,36 +45,91 @@
 <div id="in-progress" title="Calculation in progress">The LCA calculation has been started. Please wait until it finishes, and you will be redirected to the report.</div>
 
 <script>
-$(document).ready(function() {
-    $("#in-progress").dialog({
-      height: 140,
-      modal: true,
-      autoOpen: false,
-      closeOnEscape: false
-    });
+var selected_method = [];
 
-    $('form[name=calculate-form]').submit( function (e) {
-        e.preventDefault();
-        $('#in-progress').dialog("open");
-        $.ajax({
-            type: "POST",
-            url: '{{ url_for('lca') }}',
-            data: $(this).serialize(),
-            success: function (a) {
-              document.location.href='/report/' + a;
-            }
-        });
+$(document).ready(function() {
+    var methodColumns = [{
+            name: "name",
+            label: "Name",
+            cell: "string",
+            editable: false
+        }, {
+            name: "unit",
+            label: "Unit",
+            cell: "string",
+            editable: false
+        }, {
+            name: "num_cfs",
+            label: "Number of CFs",
+            cell: "integer",
+            editable: false
+        }],
+        methodData = {{ lcia_methods|safe }},
+        activityColumns = [{
+            name: "amount",
+            label: "Amount",
+            cell: "number",
+            editable: true
+        }, {
+            name: "name",
+            label: "Name",
+            cell: "string",
+            editable: false
+        }, {
+            name: "unit",
+            label: "Unit",
+            cell: "string",
+            editable: false
+        }, {
+            name: "location",
+            label: "Location",
+            cell: "string",
+            editable: false
+        }, {
+            name: "key",
+            label: "Key",
+            cell: "string",
+            editable: false,
+            renderable: false
+        }];
+
+    var lcia_click_callback = function (model) {
+        $("#chosen-method").html(model.attributes.name);
+        selected_method = model.attributes.key;
+    };
+
+    BackgridTable(methodData, methodColumns, "#lcia_methods", ['name'], "Filter by name", 20, lcia_click_callback);
+    var activity_grid = BackgridTable([], activityColumns, "#selected-activities");
+
+    var get_activities = function () {
+        var data = [];
+        for (var i = activity_grid.collection.models.length - 1; i >= 0; i--) {
+            data.push({
+                'amount': activity_grid.collection.models[i].attributes.amount,
+                'key': activity_grid.collection.models[i].attributes.key,
+            })
+        };
+        return data;
+    }
+
+    $("#activity-input").autocomplete({
+        disabled: true,
+        source: ["foo", "bar", "baz"],
+        select: function( event, ui ) {
+            activity_grid.insertRow([{
+                'amount': 1.0,
+                'name':     ui.item.value.n,
+                'unit':     ui.item.value.u,
+                'location': ui.item.value.l,
+                'key':      ui.item.value.k
+            }]);
+            $("#activity-input").val("");
+            return false;
+        },
+        focus: function( event, ui ) { return false; }
     });
 
     $("#activity-input").prop('disabled', true);
-    $('#selected-activities').dataTable({
-        "bJQueryUI": true
-    });
-    $('#lcia_methods').dataTable({
-        "bJQueryUI": true
-    });
-    $('#selected-activities').dataTable().fnSetColumnVis(4, false);
-
     $('input[name=database-select]:radio').change(function () {
         $("#activity-input").prop('disabled', false);
         $("#activity-input").focus();
@@ -123,53 +141,33 @@ $(document).ready(function() {
         });
     });
 
-    var method_builder = function (row) {
-        var m = [row.cells[0].textContent];
-        for (var i = 1; i <= 2; i++) {
-            if (row.cells[i].textContent !== "---") {
-                m.push(row.cells[i].textContent);
-            };
-        };
-        return m;
-    }
-
-    var get_selected_activities = function () {
-        var data = $('#selected-activities').dataTable().fnGetData(),
-            value = [];
-        for (var i = data.length - 1; i >= 0; i--) {
-            value.push([data[i][4], data[i][0]]);
-        };
-        return value;
-    }
-
-    $("#activity-input").autocomplete({
-        disabled: true,
-        source: ["foo", "bar", "baz"],
-        select: function( event, ui ) {
-            var table = $("#selected-activities").dataTable();
-            table.fnAddData([
-                1.0, ui.item.value.u, ui.item.value.n, ui.item.value.l, ui.item.value.k
-            ]);
-            if (table.fnGetData(0)[0] === "Not yet!") {
-                table.fnDeleteRow(0);
-            };
-            $("#activity-input").val("");
-            $("#hidden-activity").val(JSON.stringify(get_selected_activities()));
-            return false;
-        },
-        focus: function( event, ui ) { return false; }
+    $("#in-progress").dialog({
+      height: 140,
+      modal: true,
+      autoOpen: false,
+      closeOnEscape: false
     });
 
-    $("#lcia_methods tbody tr").click( function( e ) {
-        if ( $(this).hasClass('row_selected') ) {
-            $(this).removeClass('row_selected');
+
+    $('form[name=calculate-form]').submit( function (e) {
+        e.preventDefault();
+        $('#in-progress').dialog("open");
+        var submission_data = {
+            method: selected_method,
+            activities: get_activities()
         }
-        else {
-            $('#lcia_methods').dataTable().$('tr.row_selected').removeClass('row_selected');
-            $(this).addClass('row_selected');
-        }
-        $("#chosen-method").html(this.cells[0].textContent + " : " + this.cells[1].textContent + " : " + this.cells[2].textContent);
-        $("#hidden-method").val(JSON.stringify(method_builder(this)));
+        console.log(submission_data);
+        $.ajax({
+            type: "POST",
+            url: '{{ url_for('lca') }}',
+            data: JSON.stringify(submission_data),
+            contentType: "application/json",
+            // dataType: "json",
+            success: function (a) {
+                console.log(a);
+                document.location.href='/report/' + a;
+            }
+        });
     });
 });
 </script>

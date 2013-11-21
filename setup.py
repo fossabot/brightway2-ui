@@ -12,6 +12,8 @@ setup(
         "static/jqueryFileTree/*.js",
         "static/jqueryFileTree/images/*.png",
         "static/jqueryFileTree/images/*.gif",
+        "static/d3-tip/*.js",
+        "static/d3-tip/*.css",
         "static/backgrid/*.js",
         "static/backgrid/*.css",
         "static/jsoneditor/*.css",

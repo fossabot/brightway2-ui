@@ -148,7 +148,7 @@ def install_biosphere():
 def start():
     return render_template(
         "start.html",
-        root_path=json.dumps(os.path.abspath("/")),
+        root_path=JsonWrapper.dumps(os.path.abspath("/")),
         **get_windows_drives()
     )
 
@@ -201,8 +201,8 @@ def index():
     } for key, value in methods.iteritems()]
     ms.sort(key = lambda x: x['name'])
     context = {
-        'databases': json.dumps(dbs),
-        'methods': json.dumps(ms),
+        'databases': JsonWrapper.dumps(dbs),
+        'methods': JsonWrapper.dumps(ms),
         'config': config
         }
     return render_template("index.html", **context)
@@ -323,8 +323,8 @@ def activity_dataset(database, code):
         data=data,
         ref_prod=rp,
         edit_url=url_for("json_editor", database=database, code=code),
-        biosphere=json.dumps(biosphere),
-        technosphere=json.dumps(technosphere)
+        biosphere=JsonWrapper.dumps(biosphere),
+        technosphere=JsonWrapper.dumps(technosphere)
     )
 
 @app.route("/view/<database>/<code>/json")
@@ -336,11 +336,28 @@ def json_editor(database, code):
         data = data[(database, code)]
     except KeyError:
         return abort(404)
-    return render_template("jsoneditor.html", jsondata=json.dumps(data))
+    return render_template("jsoneditor.html", jsondata=JsonWrapper.dumps(data))
 
 ###########
 ### LCA ###
 ###########
+
+
+@app.route('/database/<name>/names')
+def activity_names(name):
+    if name not in databases:
+        return abort(404)
+    return json_response([{
+        "label": u"%s (%s, %s)" % (
+            value["name"],
+            value.get("unit", "?"),
+            value.get("location", "?")),
+        "value": {
+            "u": value["unit"],
+            "l": value["location"],
+            "n": value["name"],
+            "k": key
+        }} for key, value in Database(name).load().iteritems()])
 
 
 def get_tuple_index(t, i):
@@ -353,25 +370,31 @@ def get_tuple_index(t, i):
 @app.route('/lca', methods=["GET", "POST"])
 def lca():
     if request.method == "GET":
+        ms = [{
+            "name": " - ".join(key),
+            "key": key,
+            "unit": value["unit"],
+            "num_cfs": value["num_cfs"],
+            "url": url_for("method_explorer", abbreviation=value['abbreviation'])
+        } for key, value in methods.iteritems() if value.get('num_cfs', 1)]
+        ms.sort(key = lambda x: x['name'])
         return render_template("select.html",
             db_names=[x for x in databases.list if x != config.biosphere],
-            lcia_methods=[{
-                "l1": get_tuple_index(key, 0),
-                "l2": get_tuple_index(key, 1),
-                "l3": get_tuple_index(key, 2),
-                "u": value["unit"],
-                "n": value["num_cfs"],
-            } for key, value in methods.data.iteritems() if value.get(
-                "num_cfs", 1)])
+            lcia_methods=JsonWrapper.dumps(ms)
+        )
     else:
-        fu = dict([
-            (tuple(x[0]), x[1]) for x in JsonWrapper.loads(
-                request.form["activity"])
-            ])
-        method = tuple(JsonWrapper.loads(request.form["method"]))
-        iterations = config.p.get("iterations", 10000)
+        try:
+            request_data = JsonWrapper.loads(request.data)
+        except:
+            abort(400)
+        demand = {tuple(o['key']): o['amount'] for o in request_data['activities']}
+        method = tuple(request_data['method'])
+        print demand
+        print method
+        iterations = config.p.get("iterations", 1000)
         cpu_count = config.p.get("cpu_cores", None)
-        report = SerializedLCAReport(fu, method, iterations, cpu_count)
+        report = SerializedLCAReport(demand, method, iterations, cpu_count)
+        print "Starting calculation"
         report.calculate()
         try:
             report.upload()
@@ -379,6 +402,7 @@ def lca():
             # No online report no cry
             pass
         report.write()
+        print report.uuid
         return report.uuid
 
 

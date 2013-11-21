@@ -29,24 +29,28 @@ var BackgridTable = function (data, columns, selector, fields, placeholder, nrow
   var element = $(selector);
   element.append(grid.render().$el);
 
-  var paginator = new Backgrid.Extension.Paginator({
-    collection: collection
-  });
+  if (fields) {
+    var paginator = new Backgrid.Extension.Paginator({
+      collection: collection
+    });
 
-  element.append(paginator.render().$el);
+    element.append(paginator.render().$el);
 
-  var filter = new Backgrid.Extension.ClientSideFilter({
-    collection: collection.fullCollection,
-    fields: fields, // e.g. ['name']
-    placeholder: placeholder, // e.g. "Filter by name"
-    wait: 200
-  });
+    var filter = new Backgrid.Extension.ClientSideFilter({
+      collection: collection.fullCollection,
+      fields: fields, // e.g. ['name']
+      placeholder: placeholder, // e.g. "Filter by name"
+      wait: 200
+    });
 
-  element.prepend(filter.render().$el);
+    element.prepend(filter.render().$el);
 
-  filter.$el.css({float: "right", margin: "20px"});
+    filter.$el.css({float: "right", margin: "20px"});
+  }
 
   if (click_callback) {
     Backbone.on("rowclicked", click_callback);
   }
+
+  return grid;
 };
