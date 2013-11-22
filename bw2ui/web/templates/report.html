@@ -1,21 +1,12 @@
 {% extends "base.html" %}
 
 {% block extrahead %}
-<style type="text/css">
-.cell {
-  border: solid 1px white;
-  font: 10px sans-serif;
-  line-height: 12px;
-  overflow: hidden;
-  position: absolute;
-  text-indent: 2px;
-}
-</style>
 <script src="{{ url_for('static', filename="d3-tip/d3-tip.js") }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename="d3-tip/d3-tip.css") }}" type="text/css" media="screen, projection">
 <script src="{{ url_for('static', filename="js/hinton.js") }}"></script>
 <script src="{{ url_for('static', filename="js/stepped-histogram.js") }}"></script>
 <script src="{{ url_for('static', filename="js/treemap.js") }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename="css/treemap.css") }}" type="text/css" media="screen, projection">
 <script src="{{ url_for('static', filename="js/force-directed.js") }}"></script>
 {% endblock %}
 
