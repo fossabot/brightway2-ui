@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bw2ui',
-    version="0.11.1",
+    version="0.12",
     packages=["bw2ui", "bw2ui.web"],
     package_data={'bw2ui.web': [
         "static/blueprint/*.css",
@@ -29,7 +29,7 @@ setup(
     author="Chris Mutel",
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
-    install_requires=["brightway2>=0.10"],
+    install_requires=["brightway2"],
     scripts=[
         "bw2ui/bin/bw2-web.py",
         "bw2ui/bin/bw2-controller.py",

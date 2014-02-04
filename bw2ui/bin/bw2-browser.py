@@ -333,7 +333,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             ds = Database(exc['input'][0]).load()[exc['input']]
             objs.append({
                 'name': ds['name'],
-                'location': ds.get('location', 'GLO'),
+                'location': ds.get('location', config.global_location),
                 'unit': unit_override or ds.get('unit', 'unit'),
                 'amount': exc['amount'],
                 'key': exc['input'],
@@ -494,7 +494,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 'id': self.activity[1],
                 'amount': amount,
                 'unit': ds.get('unit', ''),
-                'location': ds.get('location', 'GLO'),
+                'location': ds.get('location', config.global_location),
                 'tech': len([x for x in ds['exchanges']
                     if x['type'] == 'technosphere']),
                 'bio': len([x for x in ds['exchanges']

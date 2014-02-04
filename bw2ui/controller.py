@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from brightway2 import databases, methods, Database, config, reset_meta
-from bw2data.io import Ecospold1Importer, download_biosphere, \
-    BW2PackageImporter, BW2PackageExporter, download_methods
+from bw2data.io import download_biosphere, BW2Package, download_methods
 from bw2data.logs import upload_logs_to_server
 from bw2data.colors import Fore, safe_colorama
 from errors import UnknownAction, UnknownDatabase
@@ -107,9 +106,9 @@ class Controller(object):
 
     def export(self, kwargs):
         name = self.get_name(kwargs)
-        dependencies = kwargs["--include-dependencies"]
-        path = BW2PackageExporter().export(name, dependencies)
-        return u"%s exported to Brightway package: %s" % (name, path)
+        # dependencies = kwargs["--include-dependencies"]
+        path = BW2Package.export_obj(Database(name))
+        return u"%s exported to bw2package: %s" % (name, path)
 
     def setup(self, kwargs):
         if kwargs['--data-dir']:
