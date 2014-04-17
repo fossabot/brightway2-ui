@@ -208,6 +208,11 @@ def index():
     return render_template("index.html", **context)
 
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    # Used to check if web UI is running
+    return "pong"
+
 @app.route('/settings', methods=["GET", "POST"])
 def change_settings():
     if request.method == "GET":
