@@ -1,4 +1,4 @@
 from controller import Controller
 from utils import terminal_format
 
-__version__ = (0, 12, 1)
+__version__ = (0, 13)

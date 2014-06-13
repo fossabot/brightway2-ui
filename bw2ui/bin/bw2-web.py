@@ -62,6 +62,6 @@ Message:
 
         bw2webapp.logger.addHandler(handler)
 
-    bw2webapp.run(debug=debug)
+    bw2webapp.run(host=host, port=port, debug=debug)
     # run_simple disabled because multiple workers cause cache conflicts...
     # run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)

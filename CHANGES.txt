@@ -1,0 +1,7 @@
+Changelog
+*********
+
+0.13 (2014-06-13)
+===================
+
+- CHANGE: Change bw2ui.web.app to web_app to avoid naming conflicts

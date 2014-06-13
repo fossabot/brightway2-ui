@@ -9,7 +9,6 @@ from flask import Flask, url_for, render_template, request, redirect, abort
 from jobs import JobDispatch, InvalidJob
 from urllib import unquote as _unquote
 from utils import get_job_id, get_job, set_job_status, json_response
-import json
 import multiprocessing
 import os
 import urllib2
@@ -31,19 +30,19 @@ https://github.com/simogeo/Filemanager/issues/40
         result = result.replace('%u', '\\u').decode('unicode_escape')
     return result
 
-app = Flask(__name__)
+bw2webapp = Flask(__name__)
 
 ###########################
 ### Basic functionality ###
 ###########################
 
 
-@app.errorhandler(404)
+@bw2webapp.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
 
-@app.errorhandler(500)
+@bw2webapp.errorhandler(500)
 def internal_error(e):
     return render_template('500.html'), 500
 
@@ -52,7 +51,7 @@ def internal_error(e):
 ############
 
 
-@app.route("/status/<job>")
+@bw2webapp.route("/status/<job>")
 def job_status(job):
     try:
         return json_response(get_job(job))
@@ -60,7 +59,7 @@ def job_status(job):
         abort(404)
 
 
-@app.route("/dispatch/<job>")
+@bw2webapp.route("/dispatch/<job>")
 def job_dispatch(job):
     try:
         job_data = get_job(job)
@@ -76,12 +75,12 @@ def job_dispatch(job):
 ###################
 
 
-@app.route("/filepicker")
+@bw2webapp.route("/filepicker")
 def fp_test():
     return render_template("fp.html")
 
 
-@app.route("/fp-api", methods=["POST"])
+@bw2webapp.route("/fp-api", methods=["POST"])
 def fp_api():
     full = bool(request.args.get("full", False))
     path = jqfilepicker_unquote(request.form["dir"])
@@ -130,7 +129,7 @@ def get_windows_drives():
             'current_drive': os.path.splitdrive(os.getcwd())[0]
         }
 
-@app.route('/start/path', methods=["POST"])
+@bw2webapp.route('/start/path', methods=["POST"])
 def set_path():
     path = urllib2.unquote(request.form["path"])
     dirname = urllib2.unquote(request.form["dirname"])
@@ -138,13 +137,13 @@ def set_path():
     return "1"
 
 
-@app.route('/start/biosphere')
+@bw2webapp.route('/start/biosphere')
 def install_biosphere():
     bw2setup()
     return "1"
 
 
-@app.route('/start')
+@bw2webapp.route('/start')
 def start():
     return render_template(
         "start.html",
@@ -157,7 +156,7 @@ def start():
 #################
 
 
-@app.route("/import/database", methods=["GET", "POST"])
+@bw2webapp.route("/import/database", methods=["GET", "POST"])
 def import_database():
     if request.method == "GET":
         return render_template("import-database.html", **get_windows_drives())
@@ -168,7 +167,7 @@ def import_database():
         return "1"
 
 
-@app.route("/import/method", methods=["GET", "POST"])
+@bw2webapp.route("/import/method", methods=["GET", "POST"])
 def import_method():
     if request.method == "GET":
         return render_template("import-method.html", **get_windows_drives())
@@ -182,7 +181,7 @@ def import_method():
 ###################
 
 
-@app.route('/')
+@bw2webapp.route('/')
 def index():
     if config.is_temp_dir and not config.p.get("temp_dir_ok", False):
         return redirect(url_for('start'))
@@ -208,12 +207,12 @@ def index():
     return render_template("index.html", **context)
 
 
-@app.route('/ping', methods=['GET'])
+@bw2webapp.route('/ping', methods=['GET'])
 def ping():
     # Used to check if web UI is running
     return "pong"
 
-@app.route('/settings', methods=["GET", "POST"])
+@bw2webapp.route('/settings', methods=["GET", "POST"])
 def change_settings():
     if request.method == "GET":
         context = {
@@ -233,7 +232,7 @@ def change_settings():
         return redirect(url_for('index'))
 
 
-@app.route('/speedtest')
+@bw2webapp.route('/speedtest')
 def speed_test():
     st = SpeedTest()
     return str(250 * int(40 * st.ratio()))
@@ -243,7 +242,7 @@ def speed_test():
 ##############################
 
 
-@app.route("/database/<name>")
+@bw2webapp.route("/database/<name>")
 def database_explorer(name):
     try:
         meta = databases[name]
@@ -275,7 +274,7 @@ def database_explorer(name):
     )
 
 
-@app.route("/delete/<database>", methods=["POST"])
+@bw2webapp.route("/delete/<database>", methods=["POST"])
 def delete_database(database):
     if database not in databases:
         return abort(404)
@@ -283,14 +282,14 @@ def delete_database(database):
     return ''
 
 
-@app.route("/backup/<database>", methods=["POST"])
+@bw2webapp.route("/backup/<database>", methods=["POST"])
 def backup_database(database):
     if database not in databases:
         return abort(404)
     return Database(database).backup()
 
 
-@app.route("/view/<database>/<code>")
+@bw2webapp.route("/view/<database>/<code>")
 def activity_dataset(database, code):
     if database not in databases:
         return abort(404)
@@ -332,7 +331,7 @@ def activity_dataset(database, code):
         technosphere=JsonWrapper.dumps(technosphere)
     )
 
-@app.route("/view/<database>/<code>/json")
+@bw2webapp.route("/view/<database>/<code>/json")
 def json_editor(database, code):
     if database not in databases:
         return abort(404)
@@ -348,7 +347,7 @@ def json_editor(database, code):
 ###########
 
 
-@app.route('/database/<name>/names')
+@bw2webapp.route('/database/<name>/names')
 def activity_names(name):
     if name not in databases:
         return abort(404)
@@ -372,7 +371,7 @@ def get_tuple_index(t, i):
         return "---"
 
 
-@app.route('/lca', methods=["GET", "POST"])
+@bw2webapp.route('/lca', methods=["GET", "POST"])
 def lca():
     if request.method == "GET":
         ms = [{
@@ -411,7 +410,7 @@ def lca():
         return report.uuid
 
 
-@app.route('/report/<uuid>')
+@bw2webapp.route('/report/<uuid>')
 def report(uuid):
     data = open(os.path.join(
         config.dir, "reports", "report.%s.json" % uuid)).read()
@@ -423,7 +422,7 @@ def report(uuid):
 ###############
 
 
-@app.route("/method/<abbreviation>")
+@bw2webapp.route("/method/<abbreviation>")
 def method_explorer(abbreviation):
     method = [key for key, value in methods.iteritems()
         if value['abbreviation'] == abbreviation]
@@ -460,8 +459,8 @@ def short_name(name):
     return " ".join(name.split(" ")[:3])[:25]
 
 
-@app.route("/database/tree/<name>/<code>")
-@app.route("/database/tree/<name>/<code>/<direction>")
+@bw2webapp.route("/database/tree/<name>/<code>")
+@bw2webapp.route("/database/tree/<name>/<code>/<direction>")
 def database_tree(name, code, direction="backwards"):
     def format_d(d):
         return [{"name": short_name(data[k]["name"]),
@@ -497,7 +496,7 @@ def database_tree(name, code, direction="backwards"):
         direction=direction.title())
 
 
-@app.route('/progress')
+@bw2webapp.route('/progress')
 def progress_test():
     job_id = get_job_id()
     status_id = get_job_id()
@@ -507,7 +506,7 @@ def progress_test():
         'status': status_id})
 
 
-@app.route('/hist')
+@bw2webapp.route('/hist')
 def hist_test():
     job_id = get_job_id()
     status_id = get_job_id()

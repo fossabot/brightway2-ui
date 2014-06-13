@@ -1,1 +1,1 @@
-from app import app as bw2webapp
+from .web_app import bw2webapp
