@@ -187,15 +187,15 @@ def index():
         return redirect(url_for('start'))
     dbs = [{
         "name": key,
-        "number": value["number"],
-        "version": value["version"],
+        "number": value.get("number", 0),
+        "version": value.get("version", 0),
         "url": url_for('database_explorer', name=key)
         } for key, value in databases.iteritems()]
     dbs.sort(key=lambda x: x['name'])
     ms = [{
         "name": " - ".join(key),
-        "unit": value["unit"],
-        "num_cfs": value["num_cfs"],
+        "unit": value.get("unit", "unknown"),
+        "num_cfs": value.get("num_cfs", 0),
         "url": url_for("method_explorer", abbreviation=value['abbreviation'])
     } for key, value in methods.iteritems()]
     ms.sort(key = lambda x: x['name'])

@@ -5,3 +5,4 @@ Changelog
 ===================
 
 - CHANGE: Change bw2ui.web.app to web_app to avoid naming conflicts
+- CHANGE: Remove some assumptions about Database and Method metadata
