@@ -3,7 +3,7 @@
 """Brightway2 web user interface.
 
 Usage:
-  bw2-web [--port=<port>] [--processes=<processes>] [--nobrowser] [--debug|--insecure]
+  bw2-web [--port=<port>] [--nobrowser] [--debug|--insecure]
   bw2-web -h | --help
   bw2-web --version
 
@@ -31,7 +31,7 @@ def main():
     # Needed because we open an error log handler below
     config.create_basic_directories()
 
-    args = docopt(__doc__, version='Brightway2 Web UI 0.1')
+    args = docopt(__doc__, version='Brightway2 Web UI 1.0')
     port = int(args.get("--port", False) or 5000)  # + random.randint(0, 999))
     host = "0.0.0.0" if args.get("--insecure", False) else "localhost"
     debug = args["--debug"]
@@ -40,9 +40,9 @@ def main():
         url = "http://127.0.0.1:{}".format(port)
         threading.Timer(1., lambda: webbrowser.open_new_tab(url)).start()
 
-    kwargs = {
-        "processes": args.get("<processes>", 0) or 3,
-    }
+    # kwargs = {
+    #     "processes": args.get("<processes>", 0) or 3,
+    # }
 
     if not debug:
         handler = logging.handlers.RotatingFileHandler(
