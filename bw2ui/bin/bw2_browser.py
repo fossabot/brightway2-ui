@@ -6,9 +6,9 @@ Developed by Bernhard Steubing and Chris Mutel, 2013
 This is a command-line utility to browse, search, and filter databases.
 
 Usage:
-  bw2-browser.py
-  bw2-browser.py <database>
-  bw2-browser.py <database> <activity-id>
+  bw2-browser
+  bw2-browser <database>
+  bw2-browser <database> <activity-id>
 
 Options:
   -h --help     Show this screen.
@@ -81,7 +81,7 @@ Working with databases:
 Working with activities:
     %(b)sa%(R)s %(m)sid%(R)s: Go to activity %(m)sid%(R)s in current database. Complex ids in quotes.
     %(b)si%(R)s: Info on current activity.
-    %(b)sweb%(R)s: Open current activity in web browser. Must have %(c)sbw2-web.py%(R)s running.
+    %(b)sweb%(R)s: Open current activity in web browser. Must have %(c)sbw2-web%(R)s running.
     %(b)sr%(R)s: Choose a random activity from current database.
     %(b)su%(R)s: List upstream activities (inputs for the current activity).
     %(b)sd%(R)s: List downstream activities (activities which consume current activity).
@@ -198,7 +198,7 @@ class ActivityBrowser(cmd.Cmd):
         """ update prompt and upstream/downstream activity lists """
         if self.activity:
             allowed_length = 76 - 8 - len(self.database)
-            name = Database(self.activity[0]).load()[self.activity]['name']
+            name = Database(self.activity[0]).load()[self.activity].get('name', "Unknown")
             if allowed_length < len(name):
                 name = name[:allowed_length]
             self.prompt = "@(%(db)s) %(n)s >> " % {
@@ -220,7 +220,7 @@ class ActivityBrowser(cmd.Cmd):
         ds = Database(key[0]).load()[key]
         kurtz = {
             'location': ds.get('location', ''),
-            'name': ds['name'],
+            'name': ds.get('name', "Unknown"),
         }
         if max_length < len(kurtz['name']):
             max_length -= (len(kurtz['location']) + 6)
@@ -332,7 +332,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 continue
             ds = Database(exc['input'][0]).load()[exc['input']]
             objs.append({
-                'name': ds['name'],
+                'name': ds.get('name', "Unknown"),
                 'location': ds.get('location', config.global_location),
                 'unit': unit_override or ds.get('unit', 'unit'),
                 'amount': exc['amount'],
@@ -366,7 +366,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                             'input': k,
                             'amount': exc['amount'],
                             'key': k,
-                            'name': v['name'],
+                            'name': v.get('name', "Unknown"),
                         })
         excs.sort(key=lambda x: x['name'])
         return excs
@@ -420,7 +420,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         if not self.activity:
             cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
         else:
-            es = Database(self.activity[0]).load()[self.activity]['exchanges']
+            es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
             self.format_exchanges_as_options(es, 'biosphere')
             self.print_current_options("Biosphere flows")
 
@@ -441,7 +441,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
         else:
             ds = Database(self.activity[0]).load()[self.activity]
-            unit = ds['unit']
+            unit = ds.get('unit', '')
             excs = self.get_downstream_exchanges(self.activity)
             self.format_exchanges_as_options(excs, 7, unit)
             self.print_current_options("Downstream consumers")
@@ -474,7 +474,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             cprint("%(r)sNo current activity%(R)s" % COLORS)
         else:
             ds = Database(self.activity[0]).load()[self.activity]
-            prod = [x for x in ds['exchanges'] if x['input'] == self.activity]
+            prod = [x for x in ds.get("exchanges", []) if x['input'] == self.activity]
             if len(prod) == 1:
                 amount = prod[0]['amount']
             else:
@@ -486,18 +486,20 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     Production amount: %(amount).2g %(m)s%(unit)s%(R)s
 
     Location: %(m)s%(location)s%(R)s
+    Categories: %(m)s%(categories)s%(R)s
     Technosphere inputs: %(m)s%(tech)s%(R)s
     Biosphere flows: %(m)s%(bio)s%(R)s
     Reference flow used by: %(m)s%(consumers)s%(R)s\n""" % _({
-                'name': ds['name'],
+                'name': ds.get('name', "Unknown"),
                 'database': self.activity[0],
                 'id': self.activity[1],
                 'amount': amount,
                 'unit': ds.get('unit', ''),
+                'categories': ', '.join(ds.get('categories', [])),
                 'location': ds.get('location', config.global_location),
-                'tech': len([x for x in ds['exchanges']
+                'tech': len([x for x in ds.get('exchanges', [])
                     if x['type'] == 'technosphere']),
-                'bio': len([x for x in ds['exchanges']
+                'bio': len([x for x in ds.get('exchanges', [])
                     if x['type'] == 'biosphere']),
                 'consumers': len(self.get_downstream_exchanges(self.activity)),
             }))
@@ -583,7 +585,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         if not self.activity:
             cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
         else:
-            es = Database(self.activity[0]).load()[self.activity]['exchanges']
+            es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
             self.format_exchanges_as_options(es, 'technosphere')
             self.print_current_options("Upstream inputs")
 
@@ -609,94 +611,8 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 f.write(unicode(line) + "\n")
         cprint("History exported to %(c)s%(fp)s%(R)s" % _({'fp': fp}))
 
-# SOME ADDITIONAL FUNCTIONALITY FROM THE FIRST VERSION, WHICH IS CURRENTLY NOT INCLUDED:
-# MAINLY FILTER AND UP- AND DOWNSTREAM ACTIVITIES OVER SEVERAL LEVELS
-    # def sort_by_name(self, unsorted_list):
-    # EASIER:
-    # Something like this: unsorted_list.sort(key=lambda x: x['name'])
-    #     """ sorts a list of keys by the corresponding names """
-    #     names_list = [self.db[key]["name"] for key in unsorted_list]
-    #     sorted_list = [key for (name,key) in sorted(zip(names_list,unsorted_list))]
-    #     return sorted_list
 
-    # def get_upstream_activities(self, activity):
-    #     """ get upstream activities (process inputs) (technosphere) """
-    #     if self.filter_mode == False:
-    #         upstream_activities_list = [e["input"] for e in self.db[activity]["exchanges"] if e["type"] == "technosphere"]
-    #     else:
-    #         upstream_activities_list = [e["input"] for e in self.db[activity]["exchanges"] if e["type"] == "technosphere" and e["input"] in self.filter_activities]
-    #     return self.sort_by_name(upstream_activities_list)
-
-    # def get_downstream_activities(self, activity):
-    #     """ get downstream activities (used-by processes) (technosphere) """
-    #     if self.filter_mode == False:
-    #         downstream_activities_list = [key for key in self.db if activity in [e["input"] for e in self.db[key]["exchanges"]]]
-    #     else:
-    #         downstream_activities_list = [key for key in self.db if activity in [e["input"] for e in self.db[key]["exchanges"]] if e["input"] and activity in self.filter_activities]
-    #     return self.sort_by_name(downstream_activities_list)
-
-    # def traverse_upstream(self, new_current_activity, max_depth):
-    #     """ recursive graph traversal showing the next level activities for each traversed activity """
-    #     print "ACTIVITY (DEPTH " + str(self.level) + "/" + str(max_depth) + "): " + self.db[new_current_activity]["name"] + ", " + self.db[new_current_activity]["location"]
-    #     self.display_list(self.get_upstream_activities(new_current_activity), "UPSTREAM ACTIVITIES (DEPTH " + str(self.level) + "/" + str(max_depth) + ")")
-    #     for upstream_activity in self.get_upstream_activities(new_current_activity):
-    #         self.level += 1
-    #         if self.level <= max_depth:
-    #             self.traverse_upstream(upstream_activity, max_depth)
-    #         self.level -= 1
-
-    # def traverse_downstream(self, new_current_activity, max_depth):
-    #     """ recursive graph traversal showing the next level activities for each traversed activity """
-    #     print "ACTIVITY (DEPTH " + str(self.level) + "/" + str(max_depth) + "): " + self.db[new_current_activity]["name"] + ", " + self.db[new_current_activity]["location"]
-    #     self.display_list(self.get_downstream_activities(new_current_activity), "DOWNTSTREAM ACTIVITIES (DEPTH " + str(self.level) + "/" + str(max_depth) + ")")
-    #     for upstream_activity in self.get_downstream_activities(new_current_activity):
-    #         self.level += 1
-    #         if self.level <= max_depth:
-    #             self.traverse_downstream(upstream_activity, max_depth)
-    #         self.level -= 1
-
-    # def do_filter(self, args):
-    #     """ switch filter mode on / off """
-    #     if args == "":
-    #         if self.filter_mode == True:
-    #             print "\nfilter mode is ON\n"
-    #         else:
-    #             print "\nfilter mode is OFF\n"
-    #     elif args == "on":
-    #         self.filter_mode = True
-    #         print "\n filter mode ON\n"
-    #     elif args == "off":
-    #         self.filter_mode = False
-    #         print "\n filter mode OFF\n"
-    #     else:
-    #         print "please specify 'on' / 'off' to switch on/off filter mode"
-    #     self.update()
-
-    # def do_load_filter_from_file(self, args):
-    #     """ load a file with names and locations for filter activities and convert it to a list of keys """
-    #     if args == "":
-    #         args = raw_input("\nPlease enter a filename: ")
-    #     try:
-    #         with open(args) as f:
-    #             lines = f.read().splitlines()
-    #         list_names_locations = [l.split(";") for l in lines]
-    #         try: # now make a list of keys from this list of names and locations
-    #             count = 0
-    #             self.filter_activities = []
-    #             for nl in list_names_locations:
-    #                 for key in self.db:
-    #                     if nl[0] in self.db[key]["name"] and nl[1] in self.db[key]["location"]:
-    #                         self.filter_activities.append(key)
-    #                         count += 1
-    #             self.sort_by_name(self.filter_activities)
-    #         except UnicodeDecodeError:
-    #             print "\nUnicodeDecodeError: there is a problem with special characters in line: " + str(count)
-    #         print "\nloaded " + args + " as FILTER\n"
-    #     except:
-    #         print "file could not be loaded\n"
-
-
-if __name__ == '__main__':
+def main():
     arguments = docopt(__doc__, version='Brightway2 Activity Browser 1.0')
     activitybrowser = ActivityBrowser()
     activitybrowser._init(
@@ -704,3 +620,7 @@ if __name__ == '__main__':
         activity=arguments['<activity-id>']
     )
     activitybrowser.cmdloop()
+
+
+if __name__ == '__main__':
+    main()

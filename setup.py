@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='bw2ui',
     version="0.13",
-    packages=["bw2ui", "bw2ui.web"],
+    packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
     package_data={'bw2ui.web': [
         "static/blueprint/*.css",
         "static/blueprint/plugins/buttons/*.css",
@@ -30,11 +30,21 @@ setup(
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
     install_requires=["brightway2"],
-    scripts=[
-        "bw2ui/bin/bw2-web.py",
-        "bw2ui/bin/bw2-controller.py",
-        "bw2ui/bin/bw2-browser.py"
-    ],
+    # Not executable on Windows...
+    # See http://matthew-brett.github.io/pydagogue/installing_scripts.html#setuptools-and-console-script-entry-points
+    # And https://pythonhosted.org/setuptools/setuptools.html#automatic-script-creation
+    # scripts=[
+    #     "bw2ui/bin/bw2-web.py",
+    #     "bw2ui/bin/bw2-controller.py",
+    #     "bw2ui/bin/bw2-browser.py"
+    # ],
+    entry_points = {
+        'console_scripts': [
+            'bw2-web        = bw2ui.bin.bw2_web:main',
+            'bw2-controller = bw2ui.bin.bw2_controller:main',
+            'bw2-browser    = bw2ui.bin.bw2_browser:main'
+        ]
+    },
     url="https://bitbucket.org/cmutel/brightway2-ui",
     long_description=open('README.rst').read(),
     classifiers=[

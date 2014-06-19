@@ -3,9 +3,9 @@
 """Brightway2 web user interface.
 
 Usage:
-  bw2-web.py [--port=<port>] [--processes=<processes>] [--nobrowser] [--debug|--insecure]
-  bw2-web.py -h | --help
-  bw2-web.py --version
+  bw2-web [--port=<port>] [--processes=<processes>] [--nobrowser] [--debug|--insecure]
+  bw2-web -h | --help
+  bw2-web --version
 
 Options:
   -h --help     Show this screen.
@@ -26,7 +26,7 @@ import threading
 import webbrowser
 
 
-if __name__ == "__main__":
+def main():
     clean_jobs_directory()
     # Needed because we open an error log handler below
     config.create_basic_directories()
@@ -65,3 +65,7 @@ Message:
     bw2webapp.run(host=host, port=port, debug=debug)
     # run_simple disabled because multiple workers cause cache conflicts...
     # run_simple(host, port, bw2webapp, use_evalex=True, **kwargs)
+
+
+if __name__ == "__main__":
+    main()

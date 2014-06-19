@@ -5,13 +5,15 @@ from brightway2 import config, databases, methods, Database, Method, \
 from bw2analyzer import DatabaseExplorer, SerializedLCAReport
 from bw2calc.speed_test import SpeedTest
 from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
-from flask import Flask, url_for, render_template, request, redirect, abort
+from flask import url_for, render_template, request, redirect, abort
 from jobs import JobDispatch, InvalidJob
 from urllib import unquote as _unquote
 from utils import get_job_id, get_job, set_job_status, json_response
 import multiprocessing
 import os
 import urllib2
+
+from . import bw2webapp
 
 
 def get_windows_drive_letters():
@@ -29,8 +31,6 @@ https://github.com/simogeo/Filemanager/issues/40
     if '%u' in result:
         result = result.replace('%u', '\\u').decode('unicode_escape')
     return result
-
-bw2webapp = Flask(__name__)
 
 ###########################
 ### Basic functionality ###
@@ -254,7 +254,7 @@ def database_explorer(name):
         'url': url_for('database_explorer', name=obj)
     } for obj in sorted(meta['depends'])]
     json_data = [{
-        'name': value['name'],
+        'name': value.get('name', "Unknown"),
         'categories': ",".join(value.get('categories', [])),
         'location': value.get('location', ''),
         'unit': value.get('unit', ''),
@@ -299,19 +299,16 @@ def activity_dataset(database, code):
     except KeyError:
         return abort(404)
 
-    rp = [x for x in data['exchanges'] if x['type'] == "production"]
+    rp = [x for x in data.get("exchanges", []) if x['type'] == "production"]
     if len(rp) == 1:
         rp = rp[0]['amount']
     else:
         rp = 0
 
     def format_ds(key, amount):
-        # try:
         ds = Database(key[0]).load()[key]
-        # except:
-        #     return {}
         return {
-            'name': ds['name'],
+            'name': ds.get('name', "Unknown"),
             'categories': ",".join(ds.get('categories', [])),
             'location': ds.get('location', ''),
             'unit': ds.get('unit', ''),
@@ -319,8 +316,8 @@ def activity_dataset(database, code):
             'amount': amount
             }
 
-    biosphere = [format_ds(x['input'], x['amount']) for x in data['exchanges'] if x['type'] == "biosphere"]
-    technosphere = [format_ds(x['input'], x['amount']) for x in data['exchanges'] if x['type'] == "technosphere"]
+    biosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "biosphere"]
+    technosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "technosphere"]
 
     return render_template(
         "activity.html",
@@ -353,13 +350,13 @@ def activity_names(name):
         return abort(404)
     return json_response([{
         "label": u"%s (%s, %s)" % (
-            value["name"],
-            value.get("unit", "?"),
-            value.get("location", "?")),
+            value.get("name", "Unknown"),
+            value.get("unit", "Unknown"),
+            value.get("location", "Unknown")),
         "value": {
-            "u": value["unit"],
-            "l": value["location"],
-            "n": value["name"],
+            "u": value.get("unit", "Unknown"),
+            "l": value.get("location", "Unknown"),
+            "n": value.get("name", "Unknown"),
             "k": key
         }} for key, value in Database(name).load().iteritems()])
 
@@ -434,7 +431,7 @@ def method_explorer(abbreviation):
     for key, value, geo in Method(method).load():
         flow = Database(key[0]).load()[key]
         json_data.append({
-            'name': flow['name'],
+            'name': flow.get('name', "Unknown"),
             'unit': flow.get('unit', ''),
             'categories': ",".join(flow.get('categories', [])),
             'cf': value['amount'] if isinstance(value, dict) else value,

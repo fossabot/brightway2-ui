@@ -4,5 +4,6 @@ Changelog
 0.13 (2014-06-13)
 ===================
 
+- CHANGE: Using `entry_points` instead of `scripts` in setup.py allows scripts that are exectuable in Windows. New names are `bw-web` (instead of `bw2-web.py`), `bw2-controller`, and `bw2-browser`.
 - CHANGE: Change bw2ui.web.app to web_app to avoid naming conflicts
 - CHANGE: Remove some assumptions about Database and Method metadata

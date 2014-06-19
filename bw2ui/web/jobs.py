@@ -27,9 +27,9 @@ class InvalidJob(StandardError):
 class JobDispatch(object):
     """Super-ghetto asynchronous jobs framework: Return a web page, which then makes another request(s) to start asynchronous jobs."""
     def __call__(self, job, **kwargs):
-        if kwargs.get("name", None) == "progress-test":
+        if kwargs.get("name") == "progress-test":
             return progress_test(job, **kwargs)
-        if kwargs.get("name", None) == "hist-test":
+        if kwargs.get("name") == "hist-test":
             return hist_data(job, **kwargs)
         else:
             raise InvalidJob
