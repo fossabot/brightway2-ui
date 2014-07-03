@@ -44,6 +44,8 @@
 
 <div id="in-progress" title="Calculation in progress">The LCA calculation has been started. Please wait until it finishes, and you will be redirected to the report.</div>
 
+<div id="getting-names" title="Getting list of activitiy names">Please wait until all activity names have been retrieved.</div>
+
 <script>
 var selected_method = [];
 
@@ -131,13 +133,14 @@ $(document).ready(function() {
 
     $("#activity-input").prop('disabled', true);
     $('input[name=database-select]:radio').change(function () {
-        $("#activity-input").prop('disabled', false);
-        $("#activity-input").focus();
-
         var url = "/database/" + $(this).val() + "/names";
+        $('#getting-names').dialog("open");
         $.getJSON(url, function(result) {
-            $("#activity-input").autocomplete("option", "disabled", false);
             $("#activity-input").autocomplete("option", "source", result);
+            $("#activity-input").autocomplete("option", "disabled", false);
+            $("#activity-input").prop('disabled', false);
+            $('#getting-names').dialog("close");
+            $("#activity-input").focus();
         });
     });
 
@@ -148,6 +151,12 @@ $(document).ready(function() {
       closeOnEscape: false
     });
 
+    $("#getting-names").dialog({
+      height: 140,
+      modal: true,
+      autoOpen: false,
+      closeOnEscape: false
+    });
 
     $('form[name=calculate-form]').submit( function (e) {
         e.preventDefault();

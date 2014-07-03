@@ -374,10 +374,10 @@ def lca():
         ms = [{
             "name": " - ".join(key),
             "key": key,
-            "unit": value["unit"],
-            "num_cfs": value["num_cfs"],
+            "unit": value.get("unit", "unknown"),
+            "num_cfs": value.get("num_cfs", 0),
             "url": url_for("method_explorer", abbreviation=value['abbreviation'])
-        } for key, value in methods.iteritems() if value.get('num_cfs', 1)]
+        } for key, value in methods.iteritems()]
         ms.sort(key = lambda x: x['name'])
         return render_template("select.html",
             db_names=[x for x in databases.list if x != config.biosphere],
@@ -390,12 +390,9 @@ def lca():
             abort(400)
         demand = {tuple(o['key']): o['amount'] for o in request_data['activities']}
         method = tuple(request_data['method'])
-        print demand
-        print method
         iterations = config.p.get("iterations", 1000)
         cpu_count = config.p.get("cpu_cores", None)
         report = SerializedLCAReport(demand, method, iterations, cpu_count)
-        print "Starting calculation"
         report.calculate()
         try:
             report.upload()

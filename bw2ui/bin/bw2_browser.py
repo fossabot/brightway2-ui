@@ -292,7 +292,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             'type': 'databases',
             'options': dbs,
             'formatted': [
-                "%(g)s%(name)s%(r)s (%(number)i activities/flows)" % _(
+                "%(g)s%(name)s%(r)s (%(number)s activities/flows)" % _(
                 {
                     'name': name, 'number': databases[name].get('number', 'unknown')
                 })
