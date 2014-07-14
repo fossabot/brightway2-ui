@@ -393,12 +393,15 @@ def lca():
         iterations = config.p.get("iterations", 1000)
         cpu_count = config.p.get("cpu_cores", None)
         report = SerializedLCAReport(demand, method, iterations, cpu_count)
+        print "Starting SerializedLCAReport calculation"
         report.calculate()
-        try:
-            report.upload()
-        except:
-            # No online report no cry
-            pass
+        print "Finished report calculation"
+        if config.p.get('upload_reports', 0):
+            try:
+                report.upload()
+            except:
+                # No online report no cry
+                pass
         report.write()
         print report.uuid
         return report.uuid

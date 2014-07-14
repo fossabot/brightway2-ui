@@ -165,6 +165,7 @@ $(document).ready(function() {
             method: selected_method,
             activities: get_activities()
         }
+        console.log("Starting LCA report");
         console.log(submission_data);
         $.ajax({
             type: "POST",
