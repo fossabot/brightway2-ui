@@ -225,7 +225,12 @@ class ActivityBrowser(cmd.Cmd):
         if max_length < len(kurtz['name']):
             max_length -= (len(kurtz['location']) + 6)
             kurtz['name'] = kurtz['name'][:max_length] + "..."
-        return "%(g)s%(name)s%(R)s (%(m)s%(location)s%(R)s)" % _(kurtz)
+        # TODO: Can adjust string lengths with product name, but just ignore for now
+        product = ds.get(u'reference product', '')
+        if product:
+            product += u'%(R)s, ' % _({})
+        kurtz['product'] = product
+        return "%(g)s%(name)s%(R)s (%(c)s%(product)s%(m)s%(location)s%(R)s)" % _(kurtz)
 
     def format_defaults(self):
         text = """The current data directory is %(c)s%(dd)s%(R)s.
@@ -475,7 +480,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         else:
             ds = Database(self.activity[0]).load()[self.activity]
             prod = [x for x in ds.get("exchanges", []) if x['input'] == self.activity]
-            if len(prod) == 1:
+            if u'production amount' in ds and ds[u'production amount']:
+                amount = ds[u'production amount']
+            elif len(prod) == 1:
                 amount = prod[0]['amount']
             else:
                 amount = 1.
@@ -483,6 +490,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
 
     Database: %(c)s%(database)s%(R)s
     ID: %(c)s%(id)s%(R)s
+    Product: %(c)s%(product)s%(R)s
     Production amount: %(amount).2g %(m)s%(unit)s%(R)s
 
     Location: %(m)s%(location)s%(R)s
@@ -491,6 +499,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     Biosphere flows: %(m)s%(bio)s%(R)s
     Reference flow used by: %(m)s%(consumers)s%(R)s\n""" % _({
                 'name': ds.get('name', "Unknown"),
+                'product': ds.get(u'reference product') or ds.get('name', "Unknown"),
                 'database': self.activity[0],
                 'id': self.activity[1],
                 'amount': amount,
@@ -566,9 +575,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
 
         TODO: Ignore case."""
         if not self.database:
-            cprint("%(r)sNo current database%(R)s")
+            cprint("%(r)sNo current database%(R)s" % _({}))
         elif not arg:
-            cprint("%(r)sMust provide search string%(R)s")
+            cprint("%(r)sMust provide search string%(R)s" % _({}))
         else:
             results = Database(self.database).query(Filter('name', 'in', arg))
             self.set_current_options({
@@ -592,7 +601,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_web(self, arg):
         """Open a web browser to current activity"""
         if not self.activity:
-            cprint("%(r)sNo current activity%(R)s")
+            cprint("%(r)sNo current activity%(R)s" % _({}))
         else:
             url = "http://127.0.0.1:5000/view/%(db)s/%(key)s" % {
                 'db': self.database,
