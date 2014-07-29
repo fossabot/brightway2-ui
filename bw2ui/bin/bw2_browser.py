@@ -571,15 +571,13 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             self.choose_activity(key)
 
     def do_s(self, arg):
-        """Search activity names.
-
-        TODO: Ignore case."""
+        """Search activity names."""
         if not self.database:
             cprint("%(r)sNo current database%(R)s" % _({}))
         elif not arg:
             cprint("%(r)sMust provide search string%(R)s" % _({}))
         else:
-            results = Database(self.database).query(Filter('name', 'in', arg))
+            results = Database(self.database).query(Filter('name', 'ihas', arg))
             self.set_current_options({
                 'type': 'activities',
                 'options': results.keys(),
