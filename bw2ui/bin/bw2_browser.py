@@ -71,7 +71,7 @@ Basic commands:
     %(b)sp%(R)s %(m)snumber%(R)s: Go to page %(m)snumber%(R)s in paged options.
     %(b)sh%(R)s: List history of databases and activities viewed.
     %(b)swh%(R)s: Write history to a text file.
-    %(b)sautosave%(R)s: Toggle autosave behaviour: saves current data.activity.
+    %(b)sautosave%(R)s: Toggle autosave behaviour on and off.
 
 Working with databases:
     %(b)sldb%(R)s: List available databases.

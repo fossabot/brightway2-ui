@@ -11,7 +11,6 @@ Usage:
   bw2-controller versions <name>
   bw2-controller revert <name> <revision>
   bw2-controller remove <name>
-  bw2-controller import <path> <name>
   bw2-controller export <name> [--include-dependencies]
   bw2-controller setup [--data-dir=<datadir>]
   bw2-controller upload_logs [COMMENT]
