@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block extrahead %}
+<script src="{{ url_for('static', filename="jit/jit-yc.js") }}"></script>
+<script src="{{ url_for('static', filename="js/hypertree.js") }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename="css/hypertree.css") }}" type="text/css" media="screen, projection">
+{% endblock %}
+
 {% block body %}
 <h1>{{ data.name }}</h1>
 
@@ -17,6 +23,11 @@
 </div>
 
 <div class="clear">
+    <h2>Supply chain</h2>
+    <div id="hypertree-jit"></div>
+</div>
+<div class="clear">
+
     <h2>Biosphere flows</h2>
     <div id="biosphere-table"></div>
 
@@ -77,13 +88,17 @@ var tech_columns = [{
 var bio_data = {{ biosphere|safe }};
 var tech_data = {{ technosphere|safe }};
 
-var callback = function (model) {
+var bgt_callback = function (model) {
     window.location = model.attributes.url;
 };
 
-BackgridTable(bio_data, bio_columns, "#biosphere-table", ['name'], "Filter by name", 50, callback);
+BackgridTable(bio_data, bio_columns, "#biosphere-table", ['name'], "Filter by name", 50, bgt_callback);
 
-BackgridTable(tech_data, tech_columns, "#technosphere-table", ['name'], "Filter by name", 50, callback);
+BackgridTable(tech_data, tech_columns, "#technosphere-table", ['name'], "Filter by name", 50, bgt_callback);
+
+var sc_data = {{ sc_data|safe }};
+
+DynamicHypertreeSupplyChain(sc_data, "hypertree-jit");
 
 </script>
 {% endblock %}

@@ -258,7 +258,7 @@ def database_explorer(name):
         'categories': ",".join(value.get('categories', [])),
         'location': value.get('location', ''),
         'unit': value.get('unit', ''),
-        'url': url_for('activity_dataset', database=name, code=key[1]),
+        'url': url_for('activity_dataset-canonical', database=name, code=key[1]),
         'num_exchanges': len(value.get('exchanges', [])),
         'key': key
         } for key, value in data.iteritems()]
@@ -289,8 +289,9 @@ def backup_database(database):
     return Database(database).backup()
 
 
-@bw2webapp.route("/view/<database>/<code>")
-def activity_dataset(database, code):
+@bw2webapp.route("/view/<database>/<code>", endpoint="activity_dataset-canonical")
+@bw2webapp.route("/view/<database>/<code>/sc_graph")
+def activity_dataset(database, code, sc_graph_json=False):
     if database not in databases:
         return abort(404)
     data = Database(database).load()
@@ -305,6 +306,28 @@ def activity_dataset(database, code):
     else:
         rp = 0
 
+    def format_sc(key):
+        ds = Database(key[0]).load()[key]
+        return {
+            'id': "-".join(key),
+            'children': [],
+            'name': ds.get('name', "Unknown"),
+            'data': {'url': url_for('activity_dataset-canonical', database=key[0], code=key[1])},
+        }
+
+    if request.url_rule.rule[-9:] == "/sc_graph":
+        data = {
+        'id': database + "-" + code,
+        'name': data.get('name', "Unknown"),
+        'data': {'origin': True},
+        'children': [
+            format_sc(exc['input'])
+            for exc in data.get('exchanges', [])
+            if 'input' in exc
+            and exc['type'] == "technosphere"
+        ]}
+        return json_response(data)
+
     def format_ds(key, amount):
         ds = Database(key[0]).load()[key]
         return {
@@ -312,21 +335,35 @@ def activity_dataset(database, code):
             'categories': ",".join(ds.get('categories', [])),
             'location': ds.get('location', ''),
             'unit': ds.get('unit', ''),
-            'url': url_for('activity_dataset', database=key[0], code=key[1]),
+            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1]),
             'amount': amount
             }
 
     biosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "biosphere"]
     technosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "technosphere"]
 
+    sc_data = {
+        'id': database + "-" + code,
+        'name': data.get('name', "Unknown"),
+        'data': {'origin': True},
+        'children': [
+            format_sc(exc['input'])
+            for exc in data.get('exchanges', [])
+            if 'input' in exc
+            and exc['type'] == "technosphere"
+        ]
+    }
+
     return render_template(
         "activity.html",
         data=data,
         ref_prod=rp,
         edit_url=url_for("json_editor", database=database, code=code),
+        sc_data=JsonWrapper.dumps(sc_data),
         biosphere=JsonWrapper.dumps(biosphere),
         technosphere=JsonWrapper.dumps(technosphere)
     )
+
 
 @bw2webapp.route("/view/<database>/<code>/json")
 def json_editor(database, code):
@@ -419,6 +456,10 @@ def report(uuid):
 ###############
 
 
+# @bw2webapp.route("/explore_methods")
+# def method_explorer():
+
+
 @bw2webapp.route("/method/<abbreviation>")
 def method_explorer(abbreviation):
     method = [key for key, value in methods.iteritems()
@@ -436,7 +477,7 @@ def method_explorer(abbreviation):
             'categories': ",".join(flow.get('categories', [])),
             'cf': value['amount'] if isinstance(value, dict) else value,
             'location': geo,
-            'url': url_for('activity_dataset', database=key[0], code=key[1])
+            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1])
         })
     json_data.sort(key=lambda x: x['name'])
     return render_template(
