@@ -10,6 +10,7 @@ var DynamicHypertreeSupplyChain = function (json_data, selector) {
       //canvas width and height
       width: w,
       height: h,
+      duration: 250,
       //Change node and edge styles such as
       //color, width and dimensions.
       Node: {
@@ -84,12 +85,12 @@ var DynamicHypertreeSupplyChain = function (json_data, selector) {
           $jit.util.addEvent(domElement, 'mouseenter', function (event) {
               console.log($(domElement).zIndex());
               $(domElement).zIndex(1);
-              $(domElement).children("table").fadeTo(100, 0.9);
+              $(domElement).children("table").fadeTo(100, 0.95);
           });
 
           $jit.util.addEvent(domElement, 'mouseleave', function (event) {
               $(domElement).zIndex(0);
-              $(domElement).children("table").fadeTo(100, 0.6);
+              $(domElement).children("table").fadeTo(100, 0.75);
           });
       },
 
@@ -101,11 +102,11 @@ var DynamicHypertreeSupplyChain = function (json_data, selector) {
           style.cursor = 'pointer';
           if (node._depth <= 1) {
               style.fontSize = "0.8em";
-              style.color = "#ddd";
+              // style.color = "#ddd";
 
           } else if(node._depth == 2){
               style.fontSize = "0.7em";
-              style.color = "#555";
+              // style.color = "#555";
 
           } else {
               style.display = 'none';

@@ -4,7 +4,7 @@
     font-family: 'Source Sans Pro', sans-serif;
     font-size: 150%;
     background: #6494ed;
-    opacity: 0.6;
+    opacity: 0.75;
 }
 
 .scNodeTable tbody tr:nth-child(even) td, tbody tr.even td {
