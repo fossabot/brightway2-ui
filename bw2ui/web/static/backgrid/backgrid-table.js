@@ -11,14 +11,19 @@ var ClickableRow = Backgrid.Row.extend({
 
 var BackgridTable = function (data, columns, selector, fields, placeholder, nrows, click_callback) {
   var bgModel = Backbone.Model.extend({});
-  var bgCollection = Backbone.PageableCollection.extend({
-    model: bgModel,
-    state: {
-      pageSize: nrows
-    },
-    mode: "client" // page entirely on the client side
-  });
-
+  if (nrows) {
+    var bgCollection = Backbone.PageableCollection.extend({
+      model: bgModel,
+      state: {
+        pageSize: nrows
+      },
+      mode: "client" // page entirely on the client side
+    });
+  } else {
+    var bgCollection = Backbone.Collection.extend({
+      model: bgModel,
+    });
+  }
   var collection = new bgCollection(data);
   var grid = new Backgrid.Grid({
     columns: columns,

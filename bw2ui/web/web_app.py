@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-from brightway2 import config, databases, methods, Database, Method, \
-    JsonWrapper, set_data_dir, bw2setup
-from bw2analyzer import DatabaseExplorer, SerializedLCAReport
+from .jobs import JobDispatch, InvalidJob
+from .utils import get_job_id, get_job, set_job_status, json_response, \
+    get_dynamic_media_folder
+from bw2analyzer import DatabaseExplorer, SerializedLCAReport, DatabaseHealthCheck
 from bw2calc.speed_test import SpeedTest
+from bw2data import config, databases, methods, Database, Method, \
+    JsonWrapper, set_data_dir, bw2setup
 from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
 from flask import url_for, render_template, request, redirect, abort
-from jobs import JobDispatch, InvalidJob
+from stats_arrays import uncertainty_choices
 from urllib import unquote as _unquote
-from utils import get_job_id, get_job, set_job_status, json_response
 import multiprocessing
 import os
 import urllib2
@@ -317,6 +319,7 @@ def database_explorer(name):
         name=name,
         depends=depends,
         data=JsonWrapper.dumps(json_data),
+        health_check_url=url_for('database_health_check', database=name),
         backup_url = url_for('backup_database', database=name),
         delete_url = url_for('delete_database', database=name),
     )
@@ -423,6 +426,41 @@ def json_editor(database, code):
     except KeyError:
         return abort(404)
     return render_template("jsoneditor.html", jsondata=JsonWrapper.dumps(data))
+
+
+@bw2webapp.route("/database/<database>/health-check")
+def database_health_check(database):
+    if database not in databases:
+        return abort(404)
+    data = Database(database).load()
+    np = len(data)
+
+    def reformat(key, score=None):
+        ds = data[key]
+        return {
+            'name': ds.get('name', "Unknown"),
+            'categories': ",".join(ds.get('categories', [])),
+            'location': ds.get('location', ''),
+            'unit': ds.get('unit', ''),
+            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1]),
+            'score': score
+        }
+
+    dhc = DatabaseHealthCheck(database).check(get_dynamic_media_folder())
+    dhc['pr'] = JsonWrapper.dumps([reformat(key, score * np) for score, key in dhc['pr'][:20]])
+    dhc['uncertainty'] = sorted([
+        (uncertainty_choices[key].description, value['total'], value['bad'])
+        for key, value in dhc['uncertainty'].items()
+        if value['total']
+    ], key=lambda x: x[1], reverse=True)
+    for obj in ('mo', 'me', 'sp'):
+        if dhc[obj]:
+            dhc[obj] = JsonWrapper.dumps([reformat(key, number) for key, number in dhc[obj]])
+    if dhc['nsp']:
+        dhc['nsp'] = JsonWrapper.dumps([reformat(key) for key in dhc['nsp']])
+
+    return render_template("health-check.html", database=database, **dhc)
+
 
 ###########
 ### LCA ###
