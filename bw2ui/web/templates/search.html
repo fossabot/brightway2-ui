@@ -49,7 +49,7 @@
 {% raw %}
 <script id="search-result-template" type="text/x-tmpl-mustache">
     <div class="search-result">
-        <h1>{{ name }} <button class="pure-button pure-button-primary details smaller">Show details</button> <a class="pure-button pure-button-primary smaller" href="{{ url }}">Open</a></h1>
+        <h1>{{ name }} <button class="pure-button pure-button-primary toggle-details smaller">Show details</button> <a class="pure-button pure-button-primary smaller" href="{{ url }}">Open</a></h1>
         <div class="search-result-details" style="display: none">
             <table class="pure-table pure-table-horizontal">
                 <thead>
@@ -128,8 +128,15 @@ $("#search-term").keyup(function () {
             type: 'POST'
         }).done( function (data) {
             write_search_results(data);
-            $("button.details").click(function () {
-                $(this).parent().next("div").slideDown();
+            $("button.toggle-details").click(function () {
+                if ($(this).hasClass("closed")) {
+                    $(this).parent().next("div").slideUp();
+                    $(this).text("Open details");
+                } else {
+                    $(this).parent().next("div").slideDown();
+                    $(this).text("Close details");
+                }
+                $(this).toggleClass("closed");
             });
         });
     }, 200);
