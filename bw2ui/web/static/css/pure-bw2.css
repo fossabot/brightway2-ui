@@ -1,0 +1,46 @@
+.search-bar {
+    background: #8BB0F4;
+    color: white;
+    padding: 0.5em;
+    padding-top: 1.5em;
+    /*border-right-width: 5px;*/
+    /*border-right-color: #1F5ED2;*/
+}
+
+.search-bar legend {
+    font-size: 160%;
+    color: #1F5ED2;
+}
+
+.search-results-container {
+    padding: 2em;
+}
+
+#search-results-label {
+    font-size: 160%;
+    color: #1f5ed2;
+    margin-bottom: 0.1em;
+}
+
+.pure-button.smaller {
+    font-size: 0.8em;
+}
+
+.search-result h1 {
+    font-size: 150%;
+    color: #0bccb8;
+    margin-top: 0.4em;
+    margin-bottom: 0.2em;
+}
+
+.search-result h2 {
+    font-size: 1.0em;
+    color: #6546e5;
+    margin-top: 0.4em;
+    margin-bottom: 0.2em;
+}
+
+.search-result p {
+    margin: 0.25em 0;
+    text-indent: 0.5em;
+}

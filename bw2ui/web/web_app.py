@@ -237,6 +237,54 @@ def speed_test():
     st = SpeedTest()
     return str(250 * int(40 * st.ratio()))
 
+
+#################
+### Searching ###
+#################
+
+
+@bw2webapp.route('/search')
+def whoosh_index():
+    try:
+        import whoosh
+    except ImportError:
+        abort(500)
+    return render_template('search.html')
+
+@bw2webapp.route('/search_request', methods=["POST"])
+def whoosh_search():
+    try:
+        from whoosh import index
+        from whoosh.fields import TEXT, ID, Schema
+        from whoosh.qparser import MultifieldParser
+    except ImportError:
+        abort(500)
+
+    print request.data
+    try:
+        request_data = JsonWrapper.loads(request.data)
+    except:
+        abort(400)
+
+    ix = index.open_dir(config.request_dir(u"whoosh"))
+    fields = [u"name", u"comment", u"product", u"categories"]
+    qp = MultifieldParser(fields, ix.schema, fieldboosts={u"name": 5., u"categories": 2., u"product": 3.})
+    data = []
+    with ix.searcher() as searcher:
+        data = {
+            'results': [dict(obj.iteritems()) for obj in searcher.search(qp.parse(request_data['search_string']))]
+        }
+    return json_response(data)
+
+
+def whoosh_query(terms, database=None, **kwargs):
+    """Perform a query on a Whoosh search database.
+
+    *kwargs* can be any of the following:
+
+
+    """
+    pass
 ##############################
 ### Databases and datasets ###
 ##############################
