@@ -20,3 +20,6 @@ def get_job_id():
 
 def json_response(data):
     return Response(JsonWrapper.dumps(data), mimetype='application/json')
+
+def get_dynamic_media_folder():
+    return os.path.join(os.path.dirname(__file__), u"static", u"dynamic")

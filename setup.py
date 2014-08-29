@@ -25,6 +25,7 @@ setup(
         "static/img/*.jpg",
         "static/js/*.js",
         "static/css/*.css",
+        "static/dynamic/dummy",
         "templates/*.html",
     ]},
     author="Chris Mutel",

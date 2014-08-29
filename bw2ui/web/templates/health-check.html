@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Database health check for {{ database }}</h1>
+
+<h2>Matrix graphs</h2>
+<p>Matrix graphs allow an easy visual inspection of database structure.</p>
+<div class="span-12">
+    <h2>Technosphere matrix</h2>
+    <img src="/static/dynamic/{{ tfn }}" width="470">
+</div>
+
+<div class="span-12 last">
+    <h2>Biosphere matrix</h2>
+    <img src="/static/dynamic/{{ bfn }}" width="470">
+</div>
+
+{% if nsp %}
+<div class="clear">
+    <h2>Self production</h2>
+    <p>Each dataset should produce its own reference product. Failing to produce your own reference product could result in a singular technosphere matrix, making LCA calculations impossible.</p>
+        <h3>Datasets which do not produce their reference product</h3>
+        <div id="nsp-table"></div>
+</div>
+{% endif %}
+
+<div class="clear">
+    <h2>Multioutput processes</h2>
+    <p>Multioutput processes can be used in Brightway2 (see <a href="http://chris.mutel.org/multioutput.html">Multioutput processes in LCA</a>), but should be handled with care. Each multioutput process should be inspected carefully to make sure the intended effects will occur.</p>
+    {% if mo %}
+        <h3>Multioutput datasets</h3>
+        <div id="multioutput-table"></div>
+    {% else %}
+        <p>There are no multioutput processes in this database</p>
+    {% endif %}
+</div>
+
+<div class="clear">
+    <h2>Page rank</h2>
+    <p>This are the 20 most important processes, when the technosphere matrix is analyzed using the Page Rank algorithm. Page Rank scores are normalized to the number of processes in the database, i.e. each score is actually <i>page rank score * number of processes in database</i>. Anything higher 50 is pretty high - these processes should be audited for completeness and accuracy, as they will be very important in calculating impact assessment scores.</p>
+    <div id="page-rank-table"></div>
+</div>
+
+<div class="clear">
+    <div class="span-12">
+        <h2>Information content</h2>
+        <p>In general, each exchange should represent a unique pairing of an input process and amount. Duplication of exchanges makes uncertainty and sensitivity tests harder, and are an easy path for introduced errors when some exchanges are updated and others are not.</p>
+        <table class="backgrid">
+            <tr><th>Exchange type</th><th># Exchanges</th><th># Unique exchanges</th></tr>
+            <tr><td>Technosphere</td><td>{{ ue[0] }}</td><td>{{ ue[1] }}</td></tr>
+            <tr><td>Biosphere</td><td>{{ ue[2] }}</td><td>{{ ue[3] }}</td></tr>
+        </table>
+    </div>
+
+    <div class="span-12 last">
+        <h2>Uncertainty errors</h2>
+        <p>The LCA community has an uneasy relationship with uncertainty, as most practitioners are not statistical experts. Errors in the uncertainty distributions that are included in most databases occur too often. Below is a table of the uncertainty distributions used in this database, and the number of errors found.</p>
+        <table class="backgrid">
+            <tr><th>Uncertainty type</th><th># Exchanges</th><th># Errors</th></tr>
+            {% for line in uncertainty %}
+            <tr><td>{{ line[0] }}</td><td>{{ line[1] }}</td><td>{{ line[2] }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% if sp %}
+<div class="clear">
+    <h2>System processes</h2>
+    <p>System processes are "black boxes", where the dataset links only to biosphere flows, and no supply chain (i.e. no technosphere exchanges) is present. They are highly discouraged because they are impossible to understand, analyze, or update.</p>
+    <div id="system-processes-table"></div>
+</div>
+{% endif %}
+
+{% if me %}
+<div class="clear">
+    <h2>Datasets with many inputs</h2>
+    <p>Datasets with more than 500 technosphere inputs are discouraged.</p>
+    <div id="many-exchanges-table"></div>
+</div>
+{% endif %}
+
+<script type="text/javascript">
+var bgt_callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+var pr_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "score",
+    label: "Score",
+    cell: Backgrid.NumberCell.extend({decimals: 2}),
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+
+var number_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "score",
+    label: "Number",
+    cell: Backgrid.NumberCell.extend({decimals: 0}),
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+
+var normal_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+
+var pr_data = {{ pr|safe }};
+BackgridTable(pr_data, pr_columns, "#page-rank-table", null, null, null, bgt_callback);
+
+{% if nsp %}
+    var nsp_data = {{ nsp|safe }};
+    BackgridTable(nsp_data, normal_columns, "#nsp-table", null, null, null, bgt_callback);
+{% endif %}
+
+{% if me %}
+    var me_data = {{ me|safe }};
+    BackgridTable(me_data, number_columns, "#many-exchanges-table", ['name'], "Filter by name", 25, bgt_callback);
+{% endif %}
+
+{% if sp %}
+    var sp_data = {{ sp|safe }};
+    BackgridTable(sp_data, number_columns, "#system-processes-table", ['name'], "Filter by name", 25, bgt_callback);
+{% endif %}
+
+{% if mo %}
+    var mo_data = {{ mo|safe }};
+    BackgridTable(mo_data, number_columns, "#multioutput-table", ['name'], "Filter by name", 25, bgt_callback);
+{% endif %}
+</script>
+{% endblock %}
