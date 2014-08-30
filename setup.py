@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bw2ui',
-    version="0.16",
+    version="0.17",
     packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
     package_data={'bw2ui.web': [
         "static/blueprint/*.css",
@@ -31,15 +31,10 @@ setup(
     author="Chris Mutel",
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
-    install_requires=["brightway2"],
-    # Not executable on Windows...
-    # See http://matthew-brett.github.io/pydagogue/installing_scripts.html#setuptools-and-console-script-entry-points
-    # And https://pythonhosted.org/setuptools/setuptools.html#automatic-script-creation
-    # scripts=[
-    #     "bw2ui/bin/bw2-web.py",
-    #     "bw2ui/bin/bw2-controller.py",
-    #     "bw2ui/bin/bw2-browser.py"
-    # ],
+    install_requires=[
+        "brightway2",
+        "bw2analyzer>=0.6.1"
+    ],
     entry_points = {
         'console_scripts': [
             'bw2-web        = bw2ui.bin.bw2_web:main',

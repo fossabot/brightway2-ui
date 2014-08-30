@@ -64,6 +64,15 @@
     </div>
 </div>
 
+{% if ob %}
+<div class="clear">
+    <h2>Self-consuming processes</h2>
+    <p>Processes which consume some of their own reference product as an input can introduce subtle math errors, as there are at least two different ways of thinking about the math of these datasets (see <a href="http://chris.mutel.org/too-confusing.html">Two potential points of confusion in LCA math</a>). Brightway2, the ecoinvent centre, and SimaPro all use the <i>gross production assumption</i>, where the activity produces the production amount minus the amount consumed as an input, e.g. 1 kilogram of production with 0.5 kilograms of reference product would mean that the activity only produced 1 - 0.5 = 0.5 kilograms, and 0.5 would be the value put in the technosphere matrix.</p>
+    <p>These process datasets should be carefully checked to make sure that the <i>gross production assumption</i> is used consistently.</p>
+    <div id="ouroboros-table"></div>
+</div>
+{% endif %}
+
 {% if sp %}
 <div class="clear">
     <h2>System processes</h2>
@@ -167,6 +176,11 @@ BackgridTable(pr_data, pr_columns, "#page-rank-table", null, null, null, bgt_cal
 {% if nsp %}
     var nsp_data = {{ nsp|safe }};
     BackgridTable(nsp_data, normal_columns, "#nsp-table", null, null, null, bgt_callback);
+{% endif %}
+
+{% if ob %}
+    var ob_data = {{ ob|safe }};
+    BackgridTable(ob_data, normal_columns, "#ouroboros-table", ['name'], "Filter by name", 25, bgt_callback);
 {% endif %}
 
 {% if me %}

@@ -444,8 +444,9 @@ def database_health_check(database):
     for obj in ('mo', 'me', 'sp'):
         if dhc[obj]:
             dhc[obj] = JsonWrapper.dumps([reformat(key, number) for key, number in dhc[obj]])
-    if dhc['nsp']:
-        dhc['nsp'] = JsonWrapper.dumps([reformat(key) for key in dhc['nsp']])
+    for obj in ('nsp', 'ob'):
+        if dhc[obj]:
+            dhc[obj] = JsonWrapper.dumps([reformat(key) for key in dhc[obj]])
 
     return render_template("health-check.html", database=database, **dhc)
 
