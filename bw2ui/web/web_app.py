@@ -185,6 +185,11 @@ def import_method():
 
 @bw2webapp.route('/')
 def index():
+    try:
+        import bw2search
+        search_allowed = True
+    except ImportError:
+        search_allowed = False
     if config.is_temp_dir and not config.p.get("temp_dir_ok", False):
         return redirect(url_for('start'))
     dbs = [{
@@ -206,7 +211,7 @@ def index():
         'methods': JsonWrapper.dumps(ms),
         'config': config
         }
-    return render_template("index.html", **context)
+    return render_template("index.html", search_allowed=search_allowed, **context)
 
 
 @bw2webapp.route('/ping', methods=['GET'])
@@ -248,45 +253,28 @@ def speed_test():
 @bw2webapp.route('/search')
 def whoosh_index():
     try:
-        import whoosh
+        from bw2search import Searcher
     except ImportError:
+        print u"Search functionality requires `bw2search`."
         abort(500)
     return render_template('search.html')
 
 @bw2webapp.route('/search_request', methods=["POST"])
 def whoosh_search():
     try:
-        from whoosh import index
-        from whoosh.fields import TEXT, ID, Schema
-        from whoosh.qparser import MultifieldParser
+        from bw2search import Searcher
     except ImportError:
         abort(500)
 
-    print request.data
     try:
         request_data = JsonWrapper.loads(request.data)
     except:
         abort(400)
 
-    ix = index.open_dir(config.request_dir(u"whoosh"))
-    fields = [u"name", u"comment", u"product", u"categories"]
-    qp = MultifieldParser(fields, ix.schema, fieldboosts={u"name": 5., u"categories": 2., u"product": 3.})
-    data = []
-    with ix.searcher() as searcher:
-        data = {
-            'results': [dict(obj.iteritems()) for obj in searcher.search(qp.parse(request_data['search_string']), limit=25)]
-        }
+    data = {'results': Searcher().search(request_data['search_string'])}
     return json_response(data)
 
 
-def whoosh_query(terms, database=None, **kwargs):
-    """Perform a query on a Whoosh search database.
-
-    *kwargs* can be any of the following:
-
-
-    """
-    pass
 ##############################
 ### Databases and datasets ###
 ##############################
