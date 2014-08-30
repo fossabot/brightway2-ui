@@ -274,7 +274,7 @@ def whoosh_search():
     data = []
     with ix.searcher() as searcher:
         data = {
-            'results': [dict(obj.iteritems()) for obj in searcher.search(qp.parse(request_data['search_string']))]
+            'results': [dict(obj.iteritems()) for obj in searcher.search(qp.parse(request_data['search_string']), limit=25)]
         }
     return json_response(data)
 
