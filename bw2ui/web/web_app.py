@@ -538,28 +538,33 @@ def report(uuid):
 @bw2webapp.route("/method/<abbreviation>")
 def method_explorer(abbreviation):
     method = [key for key, value in methods.iteritems()
-        if value['abbreviation'] == abbreviation]
+        if value[u'abbreviation'] == abbreviation]
     if not len(method) == 1:
         abort(404)
     method = method[0]
     meta = methods[method]
     json_data = []
-    for key, value, geo in Method(method).load():
+    for values in Method(method).load():
+        if len(values) >= 3:
+            key, value, geo = values[:3]
+        else:
+            key, value = values[:2]
+            geo = config.global_location
         flow = Database(key[0]).load()[key]
         json_data.append({
-            'name': flow.get('name', "Unknown"),
-            'unit': flow.get('unit', ''),
-            'categories': ",".join(flow.get('categories', [])),
-            'cf': value['amount'] if isinstance(value, dict) else value,
-            'location': geo,
-            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1])
+            u'name': flow.get(u'name', u"Unknown"),
+            u'unit': flow.get(u'unit', ''),
+            u'categories': ",".join(flow.get(u'categories', [])),
+            u'cf': value[u'amount'] if isinstance(value, dict) else value,
+            u'location': geo,
+            u'url': url_for('activity_dataset-canonical', database=key[0], code=key[1])
         })
-    json_data.sort(key=lambda x: x['name'])
+    json_data.sort(key=lambda x: x[u'name'])
     return render_template(
         "method.html",
         name=method,
-        unit=meta['unit'],
-        description=meta['description'],
+        unit=meta.get(u'unit', u''),
+        description=meta.get(u'description', u''),
         data=JsonWrapper.dumps(json_data)
     )
 
