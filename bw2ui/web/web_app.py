@@ -310,6 +310,8 @@ def database_explorer(name):
         health_check_url=url_for('database_health_check', database=name),
         backup_url = url_for('backup_database', database=name),
         delete_url = url_for('delete_database', database=name),
+        location_facet_url = url_for('facet', database=name, facet="location"),
+        unit_facet_url = url_for('facet', database=name, facet="unit"),
     )
 
 
@@ -414,6 +416,50 @@ def json_editor(database, code):
     except KeyError:
         return abort(404)
     return render_template("jsoneditor.html", jsondata=JsonWrapper.dumps(data))
+
+
+###################
+### Facet views ###
+###################
+
+
+@bw2webapp.route("/database/<database>/facet/<facet>")
+def facet(database, facet):
+    def reformat(key, ds):
+        return {
+            'name': ds.get('name', "Unknown"),
+            'categories': ",".join(ds.get('categories', [])),
+            'location': ds.get('location', ''),
+            'unit': ds.get('unit', ''),
+            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1]),
+        }
+
+    if database not in databases:
+        return abort(404)
+    data = Database(database).load()
+    facets = {}
+    for key, ds in data.items():
+        try:
+            facets.setdefault(ds[facet], []).append(reformat(key, ds))
+        except KeyError:
+            abort(404)
+    facet_data = [
+        (key + " (%s)" % len(facets[key]), "facet%s" % index, JsonWrapper.dumps(facets[key]))
+        for index, key in enumerate(sorted(facets.keys()))
+    ]
+    tree_data = [{'id': o[1], 'text': o[0]} for o in facet_data]
+    tree_data[0]['state'] = {'selected': True}
+    kwargs = {
+        "tree_data": JsonWrapper.dumps(tree_data),
+        "data": facet_data,
+        "db": database,
+        "facet": facet
+    }
+    return render_template("facets.html", **kwargs)
+
+####################
+### Health check ###
+####################
 
 
 @bw2webapp.route("/database/<database>/health-check")

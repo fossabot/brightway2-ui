@@ -3,20 +3,30 @@
 {% block body %}
 <h1>Database: {{ name }}</h1>
 <h2>Version: {{ meta.version }}</h2>
-{% if depends %}
-<h2>Depends on:</h2>
-<ul>
-    {% for d in depends %}
-    <li><a href="{{ d.url }}">{{ d.name }}</a></li>
-    {% endfor %}
-</ul>
-{% endif %}
 
-<p>
-<div id="backup-div"><button id="backup-button" class="positive">Backup</button></div>
-<div><a class="button positive" href="{{ health_check_url }}">Health check</a></div>
-<button id="delete-button" class="negative">Delete</button>
-</p>
+<div class="span-12">
+    {% if depends %}
+    <h2>Depends on:</h2>
+    <ul>
+        {% for d in depends %}
+        <li><a href="{{ d.url }}">{{ d.name }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <p>
+        <div id="backup-div"><button id="backup-button" class="positive">Backup</button></div>
+        <div><a class="button positive" href="{{ health_check_url }}">Health check</a></div>
+        <button id="delete-button" class="negative">Delete</button>
+    </p>
+</div>
+
+<div class="span-12 last">
+    <h2>Facet by:</h2>
+    <div><a class="button positive" href="{{ location_facet_url }}">Location</a></div> <div><a class="button positive" href="{{ unit_facet_url }}">Unit</a></div>
+</div>
+
+<div class="clear"></div>
 
 <div id="bgtable"></div>
 

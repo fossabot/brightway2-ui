@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="{{ url_for('static', filename="jstree/style.min.css") }}" type="text/css" media="screen, projection">
+<script src="{{ url_for('static', filename="jstree/jstree.min.js") }}"></script>
+{% endblock %}
+
+{% block body %}
+<h1>Database {{ db }}</h1>
+<div class="span-6">
+    <h2>{{ facet }}</h2>
+    <div id="facet-tree"></div>
+</div>
+<div class="span-18 last">
+    <div id="facet-table"></div>
+</div>
+
+<script type="text/javascript">
+var columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+
+var callback = function (model) {
+    window.location = model.attributes.url;
+};
+
+{% for line in data %}
+var data{{ line.1 }} = {{ line.2|safe }};
+{% endfor %}
+
+var gridtable = BackgridTable(datafacet0, columns, "#facet-table", ['name'], "Filter by name", 50, callback);
+
+var tree_data = {{ tree_data|safe }};
+
+$('#facet-tree').jstree({'core': {'data': tree_data}})
+
+$('#facet-tree').on('changed.jstree', function (e, data) {
+    gridtable.remove();
+    $("#facet-table").children().remove();
+    window.gridtable = BackgridTable(eval("data" + data.selected[0]), columns, "#facet-table", ['name'], "Filter by name", 50, callback);
+});
+
+</script>
+{% endblock %}
