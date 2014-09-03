@@ -45,7 +45,7 @@
     <div class="span-12">
         <h2>Information content</h2>
         <p>In general, each exchange should represent a unique pairing of an input process and amount. Duplication of exchanges makes uncertainty and sensitivity tests harder, and are an easy path for introduced errors when some exchanges are updated and others are not.</p>
-        <table class="backgrid">
+        <table>
             <tr><th>Exchange type</th><th># Exchanges</th><th># Unique exchanges</th></tr>
             <tr><td>Technosphere</td><td>{{ ue[0] }}</td><td>{{ ue[1] }}</td></tr>
             <tr><td>Biosphere</td><td>{{ ue[2] }}</td><td>{{ ue[3] }}</td></tr>
@@ -55,7 +55,7 @@
     <div class="span-12 last">
         <h2>Uncertainty errors</h2>
         <p>The LCA community has an uneasy relationship with uncertainty, as most practitioners are not statistical experts. Errors in the uncertainty distributions that are included in most databases occur too often. Below is a table of the uncertainty distributions used in this database, and the number of errors found.</p>
-        <table class="backgrid">
+        <table>
             <tr><th>Uncertainty type</th><th># Exchanges</th><th># Errors</th></tr>
             {% for line in uncertainty %}
             <tr><td>{{ line[0] }}</td><td>{{ line[1] }}</td><td>{{ line[2] }}</td></tr>

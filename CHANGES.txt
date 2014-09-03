@@ -1,6 +1,11 @@
 Changelog
 *********
 
+0.18.1 (2014-09-03)
+===================
+
+Bugfix for database health check template.
+
 0.18 (2014-09-03)
 =================
 
