@@ -1,7 +1,12 @@
 Changelog
 *********
 
-0.17 (2014-XX-XX)
+0.18 (2014-09-03)
+=================
+
+- FEATURE: Add database facet views, e.g. by location or unit.
+
+0.17 (2014-08-30)
 =================
 
 - FEATURE: Add database health check. Requires ``bw2analyzer`` >= 0.6.
