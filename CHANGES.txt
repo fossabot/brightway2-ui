@@ -5,6 +5,7 @@ Changelog
 =================
 
 - FEATURE: Add database facet views, e.g. by location or unit.
+- Updated jquery and background javascript libraries.
 
 0.17 (2014-08-30)
 =================
