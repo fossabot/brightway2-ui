@@ -5,6 +5,7 @@ from .utils import get_job_id, get_job, set_job_status, json_response, \
     get_dynamic_media_folder
 from bw2analyzer import DatabaseExplorer, SerializedLCAReport, DatabaseHealthCheck
 from bw2calc.speed_test import SpeedTest
+from bw2calc.lca import LCA
 from bw2data import config, databases, methods, Database, Method, \
     JsonWrapper, set_data_dir, bw2setup
 from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
@@ -341,6 +342,16 @@ def activity_dataset(database, code, sc_graph_json=False):
     except KeyError:
         return abort(404)
 
+    try:
+        preferred_lcia = tuple(config.p[u'preferred lcia method'])
+        assert preferred_lcia in methods
+        lca = LCA({(database, code): 1}, method=preferred_lcia)
+        lca.lci(factorize=1)
+        lca.lcia()
+        single_score = lca.score
+    except:
+        preferred_lcia = lca = single_score = False
+
     rp = [x for x in data.get("exchanges", []) if x['type'] == "production"]
     if len(rp) == 1:
         rp = rp[0]['amount']
@@ -369,9 +380,9 @@ def activity_dataset(database, code, sc_graph_json=False):
         ]}
         return json_response(data)
 
-    def format_ds(key, amount):
+    def format_ds(key, amount, biosphere=False):
         ds = Database(key[0]).load()[key]
-        return {
+        data =  {
             'name': ds.get('name', "Unknown"),
             'categories': ",".join(ds.get('categories', [])),
             'location': ds.get('location', ''),
@@ -379,8 +390,12 @@ def activity_dataset(database, code, sc_graph_json=False):
             'url': url_for('activity_dataset-canonical', database=key[0], code=key[1]),
             'amount': amount
             }
+        if lca and not biosphere:
+            lca.redo_lcia({key: amount})
+            data['score'] = lca.score
+        return data
 
-    biosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "biosphere"]
+    biosphere = [format_ds(x['input'], x['amount'], True) for x in data.get("exchanges", []) if x['type'] == "biosphere"]
     technosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "technosphere"]
 
     sc_data = {
@@ -402,7 +417,10 @@ def activity_dataset(database, code, sc_graph_json=False):
         edit_url=url_for("json_editor", database=database, code=code),
         sc_data=JsonWrapper.dumps(sc_data),
         biosphere=JsonWrapper.dumps(biosphere),
-        technosphere=JsonWrapper.dumps(technosphere)
+        technosphere=JsonWrapper.dumps(technosphere),
+        single_score=single_score,
+        lca=bool(lca),
+        preferred_lcia="-".join(preferred_lcia) if lca else None
     )
 
 

@@ -15,6 +15,8 @@
         <li>Unit: {{ data.unit }}</li>
         {% if data.location %}<li>Location: {{ data.location }}</li>{% endif %}
         {% if ref_prod %}<li>Production amount: {{ ref_prod }}</li>{% endif %}
+        {% if lca %}<li>Preferred LCIA method: {{ preferred_lcia }}</li>
+        <li>LCA score: {{ single_score }}</li>{% endif %}
     </ul>
 </div>
 
@@ -58,6 +60,39 @@ var bio_columns = [{
     editable: false
 }];
 
+{% if lca %}
+var tech_columns = [{
+    name: "name",
+    label: "Name",
+    cell: "string",
+    editable: false
+}, {
+    name: "amount",
+    label: "Amount",
+    cell: Backgrid.NumberCell.extend({decimals: 12}),
+    editable: false
+}, {
+    name: "score",
+    label: "LCA score",
+    cell: Backgrid.NumberCell.extend({decimals: 8}),
+    editable: false
+}, {
+    name: "unit",
+    label: "Unit",
+    cell: "string",
+    editable: false
+}, {
+    name: "categories",
+    label: "Categories",
+    cell: "string",
+    editable: false
+}, {
+    name: "location",
+    label: "Location",
+    cell: "string",
+    editable: false
+}];
+{% else %}
 var tech_columns = [{
     name: "name",
     label: "Name",
@@ -84,6 +119,7 @@ var tech_columns = [{
     cell: "string",
     editable: false
 }];
+{% endif %}
 
 var bio_data = {{ biosphere|safe }};
 var tech_data = {{ technosphere|safe }};
