@@ -8,6 +8,7 @@ from bw2calc.speed_test import SpeedTest
 from bw2calc.lca import LCA
 from bw2data import config, databases, methods, Database, Method, \
     JsonWrapper, set_data_dir, bw2setup
+from bw2data.search import Searcher
 # from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
 from flask import url_for, render_template, request, redirect, abort
 from stats_arrays import uncertainty_choices
@@ -188,11 +189,6 @@ def import_method():
 
 @bw2webapp.route('/')
 def index():
-    try:
-        import bw2search
-        search_allowed = True
-    except ImportError:
-        search_allowed = False
     dbs = [{
         "name": key,
         "number": value.get("number", 0),
@@ -212,7 +208,7 @@ def index():
         'methods': JsonWrapper.dumps(ms),
         'config': config
         }
-    return render_template("index.html", search_allowed=search_allowed, **context)
+    return render_template("index.html", search_allowed=True, **context)
 
 
 @bw2webapp.route('/ping', methods=['GET'])
@@ -253,11 +249,6 @@ def speed_test():
 
 @bw2webapp.route('/search')
 def whoosh_index():
-    try:
-        from bw2search import Searcher
-    except ImportError:
-        print u"Search functionality requires `bw2search`."
-        abort(500)
     return render_template('search.html')
 
 @bw2webapp.route('/search_request', methods=["POST"])
@@ -273,6 +264,7 @@ def whoosh_search():
         abort(400)
 
     data = {'results': Searcher().search(request_data['search_string'])}
+    print data
     return json_response(data)
 
 
@@ -287,7 +279,7 @@ def database_explorer(name):
         meta = databases[name]
     except KeyError:
         return abort(404)
-    data = Database(name).load()
+    data = Database(name).load(as_dict=True)
     depends = [{
         'name': obj,
         'url': url_for('database_explorer', name=obj)
@@ -336,7 +328,7 @@ def backup_database(database):
 def activity_dataset(database, code, sc_graph_json=False):
     if database not in databases:
         return abort(404)
-    data = Database(database).load()
+    data = Database(database).load(as_dict=True)
     try:
         data = data[(database, code)]
     except KeyError:
@@ -359,7 +351,7 @@ def activity_dataset(database, code, sc_graph_json=False):
         rp = 0
 
     def format_sc(key):
-        ds = Database(key[0]).load()[key]
+        ds = Database(key[0]).load(as_dict=True)[key]
         return {
             'id': "-".join(key),
             'children': [],
@@ -534,7 +526,7 @@ def activity_names(name):
             "l": value.get("location", "Unknown"),
             "n": value.get("name", "Unknown"),
             "k": key
-        }} for key, value in Database(name).load().iteritems()])
+        }} for key, value in Database(name).load(as_dict=True).iteritems()])
 
 
 def get_tuple_index(t, i):
