@@ -193,8 +193,6 @@ def index():
         search_allowed = True
     except ImportError:
         search_allowed = False
-    if config.is_temp_dir and not config.p.get("temp_dir_ok", False):
-        return redirect(url_for('start'))
     dbs = [{
         "name": key,
         "number": value.get("number", 0),
