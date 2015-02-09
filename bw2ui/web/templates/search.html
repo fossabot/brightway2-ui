@@ -23,20 +23,22 @@
 <body>
     <div class="pure-g">
         <div class="pure-u-1-5">
-            <div class="search-bar">
-                <form class="pure-form pure-form-stacked">
-                    <fieldset>
-                        <legend>BRIGHTWAY2 SEARCH</legend>
+            <div class="search-container">
+                <div class="search-bar">
+                    <form class="pure-form pure-form-stacked">
+                        <fieldset>
+                            <legend>BRIGHTWAY2 SEARCH</legend>
 
-                        <label for="search-term">Search term(s)</label>
-                        <input id="search-term" type="text">
+                            <label for="search-term">Search term(s)</label>
+                            <input id="search-term" type="text">
 
-                        <p><i>carbon</i> finds the complete term <i>carbon</i></p>
-                        <p><i>carb*</i> finds <i>carbon</i>, <i>carbohydrate</i>, etc.</p>
-                        <p><i>"fuel cell"</i> finds the phrase <i>fuel cell</i></p>
+                            <p><i>carbon</i> finds the complete term <i>carbon</i></p>
+                            <p><i>carb*</i> finds <i>carbon</i>, <i>carbohydrate</i>, etc.</p>
+                            <p><i>"fuel cell"</i> finds the phrase <i>fuel cell</i></p>
 
-                    </fieldset>
-                </form>
+                        </fieldset>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="pure-u-4-5">
@@ -48,33 +50,35 @@
     </div>
 {% raw %}
 <script id="search-result-template" type="text/x-tmpl-mustache">
-    <div class="search-result">
-        <h1>{{ name }} <button class="pure-button pure-button-primary toggle-details smaller">Show details</button> <a class="pure-button pure-button-primary smaller" href="{{ url }}">Open</a></h1>
-        <div class="search-result-details" style="display: none">
-            <table class="pure-table pure-table-horizontal">
-                <thead>
-                    <tr>
-                        <th>Database</th>
-                        <th>Product</th>
-                        <th>Categories</th>
-                        <th>Location</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ database }}</td>
-                        <td>{{ product }}</td>
-                        <td>{{ categories }}</td>
-                        <td>{{ location }}</td>
-                    </tr>
-                </tbody>
-            </table>
+    <li class="search-result">
+        <a class="tooltip" href="{{ url }}">
+            {{ name }} ({{ product}}, {{ location }})
+            <span>
+                <table class="pure-table pure-table-horizontal">
+                    <thead>
+                        <tr>
+                            <th>Database</th>
+                            <th>Product</th>
+                            <th>Categories</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ database }}</td>
+                            <td>{{ product }}</td>
+                            <td>{{ categories }}</td>
+                            <td>{{ location }}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <h2>Comments</h2>
-            {{ #comments }}<p>{{{ comment }}}</p>
-            {{ /comments }}
-        </div>
-    </div>
+                <h2>Comments</h2>
+                {{ #comments }}<p>{{{ comment }}}</p>
+                {{ /comments }}
+            </span>
+        </a>
+    </li>
 </script>
 {% endraw %}
 
@@ -106,15 +110,13 @@ var split_comments = function (data) {
 }
 
 var write_search_results = function (data) {
-    console.log("Request data:");
-    console.log(data);
     var template = $('#search-result-template').html();
     Mustache.parse(template);
     var results = [];
     for (var i = 0; i < data.results.length; i++) {
         results.push(Mustache.render(template, split_comments(data.results[i])));
     };
-    $("#search-results").html(results.join(" "));
+    $("#search-results").html("<ul>" + results.join(" ") + "</ul>");
 }
 
 $("#search-term").keyup(function () {
@@ -126,19 +128,7 @@ $("#search-term").keyup(function () {
             data: prepare_search(),
             dataType: 'json',
             type: 'POST'
-        }).done( function (data) {
-            write_search_results(data);
-            $("button.toggle-details").click(function () {
-                if ($(this).hasClass("closed")) {
-                    $(this).parent().next("div").slideUp();
-                    $(this).text("Open details");
-                } else {
-                    $(this).parent().next("div").slideDown();
-                    $(this).text("Close details");
-                }
-                $(this).toggleClass("closed");
-            });
-        });
+        }).done( function (data) {write_search_results(data);});
     }, 200);
 });
 

@@ -1,41 +1,34 @@
-.search-bar {
-    background: #8BB0F4;
+body {
+    background-image: url('/static/img/light_wool.png');
+    background-repeat: repeat;
+}
+
+.search-container {
+    top: 0;
+    bottom: 0;
+    position: fixed;
+    background: #d89b68;
     color: white;
+    border-right: 2px solid #b06f3a;
+}
+
+.search-bar {
+    margin-top: 80%;
     padding: 0.5em;
-    padding-top: 1.5em;
-    /*border-right-width: 5px;*/
-    /*border-right-color: #1F5ED2;*/
 }
 
 .search-bar legend {
     font-size: 160%;
-    color: #1F5ED2;
+    color: #874917;
 }
 
 .search-results-container {
     padding: 2em;
 }
 
-#search-results-label {
-    font-size: 160%;
-    color: #1f5ed2;
-    margin-bottom: 0.1em;
-}
-
-.pure-button.smaller {
-    font-size: 0.8em;
-}
-
-.search-result h1 {
-    font-size: 150%;
-    color: #0bccb8;
-    margin-top: 0.4em;
-    margin-bottom: 0.2em;
-}
-
 .search-result h2 {
     font-size: 1.0em;
-    color: #6546e5;
+    color: #3e8282;
     margin-top: 0.4em;
     margin-bottom: 0.2em;
 }
@@ -43,4 +36,50 @@
 .search-result p {
     margin: 0.25em 0;
     text-indent: 0.5em;
+}
+
+#search-results a.tooltip {
+    outline: none;
+    text-decoration: none;
+    color: white;
+}
+
+#search-results a.tooltip:hover {
+    text-decoration: none;
+}
+
+#search-results li {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0.5em;
+    border: 1px solid #126c12;
+    padding: 0.3em;
+    background: #53ad53;
+    color: white;
+}
+
+#search-results li:hover {
+    background: #2e8c2e;
+}
+
+#search-results li a.tooltip span {
+    color: black;
+    background-color: white;
+    z-index:10;
+    display:none;
+    padding: 1.2em;
+    margin-top: 0.2em;
+    /*margin-right: -6em;*/
+    width: 40em;
+}
+
+#search-results a.tooltip:hover span{
+    display: inline;
+    position: absolute;
+    border:1px solid #DCA;
+}
+
+#search-results ul {
+    margin: 0 auto;
+    /*text-align: center;*/
 }
