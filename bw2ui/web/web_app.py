@@ -8,7 +8,7 @@ from bw2calc.speed_test import SpeedTest
 from bw2calc.lca import LCA
 from bw2data import config, databases, methods, Database, Method, \
     JsonWrapper, set_data_dir, bw2setup
-from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
+# from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
 from flask import url_for, render_template, request, redirect, abort
 from stats_arrays import uncertainty_choices
 from urllib import unquote as _unquote
@@ -164,6 +164,7 @@ def import_database():
     if request.method == "GET":
         return render_template("import-database.html", **get_windows_drives())
     else:
+        raise NotImplemented
         path = urllib2.unquote(request.form["path"])
         name = urllib2.unquote(request.form["name"])
         Ecospold1Importer().importer(path, name)
@@ -175,6 +176,7 @@ def import_method():
     if request.method == "GET":
         return render_template("import-method.html", **get_windows_drives())
     else:
+        raise NotImplemented
         path = urllib2.unquote(request.form["path"])
         EcospoldImpactAssessmentImporter().importer(path)
         return "1"

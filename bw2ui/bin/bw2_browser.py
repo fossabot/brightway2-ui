@@ -18,7 +18,6 @@ Options:
 from __future__ import print_function
 from docopt import docopt
 from brightway2 import *
-from bw2data.colors import Fore, safe_colorama
 import cmd
 import codecs
 import itertools
@@ -47,61 +46,41 @@ QUIET = itertools.cycle((
     "Do not underestimate the determination of a quiet man.",
     ))
 
-COLORS = {
-    'b': Fore.BLUE,  # Used for options user can select
-    'c': Fore.CYAN,  # Used for configuration variables or supplement info
-    'g': Fore.GREEN,  # Used for main information in line
-    'm': Fore.MAGENTA,  # Used for optional parameter
-    'r': Fore.RED,  # Used for errors
-    'y': Fore.YELLOW,  # Used for prompt,
-    'R': Fore.RESET,
-}
 
 HELP_TEXT = """
-This is a simple way to browse databases and activities in Brightway%(b)s2%(R)s.
+This is a simple way to browse databases and activities in Brightway2.
 The following commands are available:
 
 Basic commands:
-    %(b)s?%(R)s: Print this help screen.
-    %(b)squit%(R)s, %(b)sq%(R)s: Exit the activity browser.
-    %(m)snumber%(R)s: Go to option %(m)snumber%(R)s when a list of options is present.
-    %(b)sl%(R)s: List current options.
-    %(b)sn%(R)s: Go to next page in paged options.
-    %(b)sp%(R)s: Go to previous page in paged options.
-    %(b)sp%(R)s %(m)snumber%(R)s: Go to page %(m)snumber%(R)s in paged options.
-    %(b)sh%(R)s: List history of databases and activities viewed.
-    %(b)swh%(R)s: Write history to a text file.
-    %(b)sautosave%(R)s: Toggle autosave behaviour on and off.
+    ?: Print this help screen.
+    quit, q: Exit the activity browser.
+    number: Go to option number when a list of options is present.
+    l: List current options.
+    n: Go to next page in paged options.
+    p: Go to previous page in paged options.
+    p number: Go to page number in paged options.
+    h: List history of databases and activities viewed.
+    wh: Write history to a text file.
+    autosave: Toggle autosave behaviour on and off.
 
 Working with databases:
-    %(b)sldb%(R)s: List available databases.
-    %(b)sdb%(R)s %(m)sname%(R)s: Go to database %(m)sname%(R)s. No quotes needed.
-    %(b)ss%(R)s %(m)sstring%(R)s: Search activity names in current database with %(m)sstring%(R)s.
+    ldb: List available databases.
+    db name: Go to database name. No quotes needed.
+    s string: Search activity names in current database with string.
 
 Working with activities:
-    %(b)sa%(R)s %(m)sid%(R)s: Go to activity %(m)sid%(R)s in current database. Complex ids in quotes.
-    %(b)si%(R)s: Info on current activity.
-    %(b)sweb%(R)s: Open current activity in web browser. Must have %(c)sbw2-web%(R)s running.
-    %(b)sr%(R)s: Choose a random activity from current database.
-    %(b)su%(R)s: List upstream activities (inputs for the current activity).
-    %(b)sd%(R)s: List downstream activities (activities which consume current activity).
-    %(b)sb%(R)s: List biosphere flows for the current activity.
-    """ % COLORS
-
-
-def _(d):
-    d.update(**COLORS)
-    return d
-
-
-def cprint(line):
-    with safe_colorama():
-        print(line + Fore.RESET)
+    a id: Go to activity id in current database. Complex ids in quotes.
+    i: Info on current activity.
+    web: Open current activity in web browser. Must have bw2-web running.
+    r: Choose a random activity from current database.
+    u: List upstream activities (inputs for the current activity).
+    d: List downstream activities (activities which consume current activity).
+    b: List biosphere flows for the current activity.
+    """
 
 
 def get_autosave_text(autosave):
-    return Fore.GREEN + "on" + Fore.RESET if autosave \
-        else Fore.RED + "off" + Fore.RESET
+    return "on" if autosave else "off"
 
 
 class ActivityBrowser(cmd.Cmd):
@@ -114,7 +93,7 @@ class ActivityBrowser(cmd.Cmd):
         if config.p.get('ab_activity', None):
             # Must be tuple, not a list
             config.p['ab_activity'] = tuple(config.p['ab_activity'])
-        cprint(HELP_TEXT + "\n" + self.format_defaults())
+        print(HELP_TEXT + "\n" + self.format_defaults())
         self.page_size = 20
         self.set_current_options(None)
         self.autosave = config.p.get('ab_autosave', False)
@@ -135,7 +114,7 @@ class ActivityBrowser(cmd.Cmd):
         try:
             index = int(opt)
             if index >= len(self.current_options.get('formatted', [])):
-                cprint("%(r)sThere aren't this many options%(R)s" % COLORS)
+                print("There aren't this many options")
             elif self.current_options['type'] == 'databases':
                 self.choose_database(self.current_options['options'][index])
             elif self.current_options['type'] == 'activities':
@@ -148,34 +127,34 @@ class ActivityBrowser(cmd.Cmd):
                     self.choose_activity(option[1])
             else:
                 # No current options.
-                cprint(Fore.RED + "No current options to choose from" + Fore.RESET)
+                print("No current options to choose from")
         except:
-            cprint(traceback.format_exc())
-            cprint("%(r)sCan't convert %(o)s to number.%(R)s\nCurrent options are:" % _({'o': opt}))
+            print(traceback.format_exc())
+            print("Can't convert %(o)s to number.\nCurrent options are:" % {'o': opt})
             self.print_current_options()
 
     def print_current_options(self, label=None):
         print("")
         if label:
-            cprint(label + "\n")
+            print(label + "\n")
         if not self.current_options.get('formatted', []):
-            cprint("%(r)sEmpty list%(R)s" % COLORS)
+            print("Empty list")
         elif self.max_page:
             # Paging needed
             begin = self.page * self.page_size
             end = (self.page + 1) * self.page_size
             for index, obj in enumerate(self.current_options['formatted'][begin: end]):
-                cprint("[%(b)s%(index)i%(R)s]: %(option)s%(R)s" % \
-                    _({'option': obj, 'index': index + begin})
+                print("[%(index)i]: %(option)s" % \
+                    {'option': obj, 'index': index + begin}
                 )
-            cprint("\nPage %(g)s%(page)i%(R)s of %(g)s%(maxp)s%(R)s. Use %(b)sn%(R)s (next page) and %(b)sp%(R)s (previous page) to navigate." % _({
+            print("\nPage %(g)s%(page)i of %(g)s%(maxp)s. Use n (next page) and p (previous page) to navigate." % {
                 'page': self.page,
                 'maxp': self.max_page
-            }))
+            })
         else:
             for index, obj in enumerate(self.current_options['formatted']):
-                cprint("[%(b)s%(index)i%(R)s]: %(option)s" % \
-                    _({'option': obj, 'index': index})
+                print("[%(index)i]: %(option)s" % \
+                    {'option': obj, 'index': index}
                 )
         print("")
 
@@ -228,17 +207,17 @@ class ActivityBrowser(cmd.Cmd):
         # TODO: Can adjust string lengths with product name, but just ignore for now
         product = ds.get(u'reference product', '')
         if product:
-            product += u'%(R)s, ' % _({})
+            product += u', ' % {}
         kurtz['product'] = product
-        return "%(g)s%(name)s%(R)s (%(c)s%(product)s%(m)s%(location)s%(R)s)" % _(kurtz)
+        return "%(g)s%(name)s (%(product)s%(location)s)" % kurtz
 
     def format_defaults(self):
-        text = """The current data directory is %(c)s%(dd)s%(R)s.
-Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
-            'autosave': get_autosave_text(config.p.get('ab_autosave', False))})
+        text = """The current data directory is %(dd)s.
+Autosave is turned %(autosave)s.""" % {'dd': config.dir,
+            'autosave': get_autosave_text(config.p.get('ab_autosave', False))}
         if config.p.get('ab_database', None):
-            text += "\nDefault database: %(c)s%(db)s%(R)s." % _(
-                {'db': config.p['ab_database']})
+            text += "\nDefault database: %(db)s." % \
+                {'db': config.p['ab_database']}
         if config.p.get('ab_activity', None):
             text += "\nDefault activity: %s" % self.format_activity(config.p['ab_activity'])
         return text
@@ -246,9 +225,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def format_history(self, command):
         kind, obj = command
         if kind == 'database':
-            return "%(c)sDb%(R)s: %(g)s%(name)s%(R)s" % _({'name': obj})
+            return "Db: %(g)s%(name)s" % {'name': obj}
         else:
-            return "%(c)sAct%(R)s: %(act)s" % _({'act': self.format_activity(obj)})
+            return "Act: %(act)s" % {'act': self.format_activity(obj)}
 
     def reformat_history(self, json_data):
         """Convert lists to tuples (from JSON serialization)"""
@@ -280,8 +259,8 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         """Load database, trying first """
         if database:
             if database not in databases:
-                cprint("%(r)sDatabase %(name)s not found%(R)s" % \
-                    _({'name': database}))
+                print("Database %(name)s not found" % \
+                    {'name': database})
                 self.load_database(None)
             else:
                 self.database = database
@@ -297,10 +276,10 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             'type': 'databases',
             'options': dbs,
             'formatted': [
-                "%(g)s%(name)s%(r)s (%(number)s activities/flows)" % _(
+                "%(g)s%(name)s (%(number)s activities/flows)" %
                 {
                     'name': name, 'number': databases[name].get('number', 'unknown')
-                })
+                }
             for name in dbs]
         })
         self.print_current_options("Databases")
@@ -348,8 +327,8 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         self.set_current_options({
             'type': 'activities',
             'options': [obj['key'] for obj in objs],
-            'formatted': ["%(amount).3g %(m)s%(unit)s %(g)s%(name)s%(R)s (%(m)s%(location)s%(R)s)" \
-                % _(obj) for obj in objs]
+            'formatted': ["%(amount).3g %(unit)s %(g)s%(name)s (%(location)s)" \
+                % obj for obj in objs]
         })
 
     def get_downstream_exchanges(self, activity):
@@ -389,13 +368,13 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             try:
                 self.choose_option(int(line))
             except:
-                cprint(Fore.RED + GRUMPY.next() + Fore.RESET + line)
+                print(GRUMPY.next() + line)
         else:
-            cprint(Fore.RED + GRUMPY.next() + Fore.RESET + line)
+            print(GRUMPY.next() + line)
 
     def emptyline(self):
         """No command entered!"""
-        cprint(QUIET.next() + "\n(" + Fore.BLUE + "?" + Fore.RESET + " for help)")
+        print(QUIET.next() + "\n(? for help)")
 
     #######################
     # Custom user actions #
@@ -405,9 +384,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         """Go to activity id ``arg``"""
         key = (self.database, arg)
         if not self.database:
-            cprint("%(r)sNo database selected%(R)s" % COLORS)
+            print("No database selected")
         elif key not in Database(self.database).load():
-            cprint("%(r)sInvalid activity id%(R)s" % COLORS)
+            print("Invalid activity id")
         else:
             self.choose_activity(key)
 
@@ -418,12 +397,12 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         self.autosave = not self.autosave
         config.p['ab_autosave'] = self.autosave
         config.save_preferences()
-        cprint("Autosave is now %s" % get_autosave_text(self.autosave))
+        print("Autosave is now %s" % get_autosave_text(self.autosave))
 
     def do_b(self, arg):
         """List biosphere flows"""
         if not self.activity:
-            cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
+            print("Need to choose an activity first")
         else:
             es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
             self.format_exchanges_as_options(es, 'biosphere')
@@ -443,7 +422,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_d(self, arg):
         """Load downstream activities"""
         if not self.activity:
-            cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
+            print("Need to choose an activity first")
         else:
             ds = Database(self.activity[0]).load()[self.activity]
             unit = ds.get('unit', '')
@@ -453,9 +432,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
 
     def do_db(self, arg):
         """Switch to a different database"""
-        cprint(arg)
+        print(arg)
         if arg not in databases:
-            cprint("%(r)s'%(db)s' not a valid database%(R)s" % _({'db': arg}))
+            print("'%(db)s' not a valid database" % {'db': arg})
         else:
             self.choose_database(arg)
 
@@ -469,14 +448,14 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         self.print_current_options("Browser history")
 
     def do_help(self, args):
-        cprint(HELP_TEXT)
+        print(HELP_TEXT)
 
     def do_i(self, arg):
         """Info on current activity.
 
         TODO: Colors could be improved."""
         if not self.activity:
-            cprint("%(r)sNo current activity%(R)s" % COLORS)
+            print("No current activity")
         else:
             ds = Database(self.activity[0]).load()[self.activity]
             prod = [x for x in ds.get("exchanges", []) if x['input'] == self.activity]
@@ -486,18 +465,18 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 amount = prod[0]['amount']
             else:
                 amount = 1.
-            cprint("""\n%(g)s%(name)s%(R)s
+            print("""\n%(g)s%(name)s
 
-    Database: %(c)s%(database)s%(R)s
-    ID: %(c)s%(id)s%(R)s
-    Product: %(c)s%(product)s%(R)s
-    Production amount: %(amount).2g %(m)s%(unit)s%(R)s
+    Database: %(database)s
+    ID: %(id)s
+    Product: %(product)s
+    Production amount: %(amount).2g %(unit)s
 
-    Location: %(m)s%(location)s%(R)s
-    Categories: %(m)s%(categories)s%(R)s
-    Technosphere inputs: %(m)s%(tech)s%(R)s
-    Biosphere flows: %(m)s%(bio)s%(R)s
-    Reference flow used by: %(m)s%(consumers)s%(R)s\n""" % _({
+    Location: %(location)s
+    Categories: %(categories)s
+    Technosphere inputs: %(tech)s
+    Biosphere flows: %(bio)s
+    Reference flow used by: %(consumers)s\n""" % {
                 'name': ds.get('name', "Unknown"),
                 'product': ds.get(u'reference product') or ds.get('name', "Unknown"),
                 'database': self.activity[0],
@@ -511,14 +490,14 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 'bio': len([x for x in ds.get('exchanges', [])
                     if x['type'] == 'biosphere']),
                 'consumers': len(self.get_downstream_exchanges(self.activity)),
-            }))
+            })
 
     def do_l(self, arg):
         """List current options"""
         if self.current_options['type']:
             self.print_current_options()
         else:
-            cprint(Fore.RED + "No current options" + Fore.RESET)
+            print("No current options")
 
     def do_ldb(self, arg):
         """List available databases"""
@@ -527,9 +506,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_n(self, arg):
         """Go to next page in paged options"""
         if not self.current_options['type']:
-            cprint("%(r)sNot in page mode%(R)s" % COLORS)
+            print("Not in page mode")
         elif self.page == self.max_page:
-            cprint("%(r)sNo next page%(R)s" % COLORS)
+            print("No next page")
         else:
             self.page += 1
             self.print_current_options()
@@ -537,19 +516,19 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_p(self, arg):
         """Go to previous page in paged options"""
         if not self.current_options['type']:
-            cprint("%(r)sNot in page mode%(R)s" % COLORS)
+            print("Not in page mode")
         elif arg:
             try:
                 page = int(arg)
                 if page < 0 or page > self.max_page:
-                    cprint("%(r)sInvalid page number%(R)s" % COLORS)
+                    print("Invalid page number")
                 else:
                     self.page = page
                     self.print_current_options()
             except:
-                cprint("%(r)sCan't convert page number %(page)s%(R)s" % _({'page': arg}))
+                print("Can't convert page number %(page)s" % {'page': arg})
         elif self.page == 0:
-            cprint("%(r)sAlready page 0%(R)s" % COLORS)
+            print("Already page 0")
         else:
             self.page -= 1
             self.print_current_options()
@@ -565,7 +544,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_r(self, arg):
         """Choose an activity at random"""
         if not self.database:
-            cprint(Fore.RED + "Please choose a database first" + Fore.RESET)
+            print("Please choose a database first")
         else:
             key = Database(self.database).random()
             self.choose_activity(key)
@@ -573,9 +552,9 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_s(self, arg):
         """Search activity names."""
         if not self.database:
-            cprint("%(r)sNo current database%(R)s" % _({}))
+            print("No current database" % {})
         elif not arg:
-            cprint("%(r)sMust provide search string%(R)s" % _({}))
+            print("Must provide search string" % {})
         else:
             results = Database(self.database).query(Filter('name', 'ihas', arg))
             self.set_current_options({
@@ -584,13 +563,13 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
                 'formatted': [self.format_activity(key) for key in results]
                 })
             self.print_current_options(
-                "Search results for %(c)s%(query)s%(R)s" % _({'query': arg})
+                "Search results for %(query)s" % {'query': arg}
             )
 
     def do_u(self, arg):
         """List upstream processes"""
         if not self.activity:
-            cprint("%(r)sNeed to choose an activity first%(R)s" % COLORS)
+            print("Need to choose an activity first")
         else:
             es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
             self.format_exchanges_as_options(es, 'technosphere')
@@ -599,7 +578,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
     def do_web(self, arg):
         """Open a web browser to current activity"""
         if not self.activity:
-            cprint("%(r)sNo current activity%(R)s" % _({}))
+            print("No current activity" % {})
         else:
             url = "http://127.0.0.1:5000/view/%(db)s/%(key)s" % {
                 'db': self.database,
@@ -616,7 +595,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
         with codecs.open(fp, "w", encoding='utf-8') as f:
             for line in self.history:
                 f.write(unicode(line) + "\n")
-        cprint("History exported to %(c)s%(fp)s%(R)s" % _({'fp': fp}))
+        print("History exported to %(fp)s" % {'fp': fp})
 
 
 def main():
