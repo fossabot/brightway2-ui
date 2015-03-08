@@ -1,6 +1,11 @@
 Changelog
 *********
 
+0.18.2 (2015-03-08)
+===================
+
+Fix `issue #6 <https://bitbucket.org/cmutel/brightway2-ui/issue/6/bw2-controller-typeerror-safe_colorama>`__
+
 0.18.1 (2014-09-03)
 ===================
 
