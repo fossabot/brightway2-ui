@@ -118,7 +118,7 @@ class Controller(object):
             elif not os.access(os.path.abspath(os.path.join(data_dir, "..")), os.W_OK):
                 exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
                 return
-            question_text = safe_colorama("\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):")
+            question_text = "\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):"
             response = raw_input(question_text)
             if response != "y":
                 exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
