@@ -1,9 +1,9 @@
-from brightway2 import config, JsonWrapper
+from brightway2 import projects, JsonWrapper
 from flask import Response
 import os
 import uuid
 
-jobs_dir = config.request_dir("jobs")
+jobs_dir = projects.request_directory("jobs")
 
 
 def set_job_status(job, status):

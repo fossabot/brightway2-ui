@@ -590,7 +590,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             ).start()
 
     def do_wh(self, arg):
-        output_dir = config.request_dir("export")
+        output_dir = projects.request_directory("export")
         fp = os.path.join(output_dir, "browser history.%s.txt" % time.ctime())
         with codecs.open(fp, "w", encoding='utf-8') as f:
             for line in self.history:
