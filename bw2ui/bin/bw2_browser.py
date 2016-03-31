@@ -7,8 +7,9 @@ This is a command-line utility to browse, search, and filter databases.
 
 Usage:
   bw2-browser
-  bw2-browser <database>
-  bw2-browser <database> <activity-id>
+  bw2-browser <project>
+  bw2-browser <project> <database>
+  bw2-browser <project> <database> <activity-id>
 
 Options:
   -h --help     Show this screen.
@@ -27,6 +28,21 @@ import threading
 import time
 import traceback
 import webbrowser
+
+try:
+    unicode = unicode
+except NameError:
+    # 'unicode' is undefined, must be Python 3
+    str = str
+    unicode = str
+    bytes = bytes
+    basestring = (str,bytes)
+else:
+    # 'unicode' exists, must be Python 2
+    str = str
+    unicode = unicode
+    bytes = str
+    basestring = basestring
 
 GRUMPY = itertools.cycle((
     "This makes no damn sense: ",
@@ -64,6 +80,7 @@ Basic commands:
     autosave: Toggle autosave behaviour on and off.
 
 Working with databases:
+    lpj: List available projects.
     ldb: List available databases.
     db name: Go to database name. No quotes needed.
     s string: Search activity names in current database with string.
@@ -85,7 +102,7 @@ def get_autosave_text(autosave):
 
 class ActivityBrowser(cmd.Cmd):
     """A command line based Activity Browser for brightway2."""
-    def _init(self, database=None, activity=None):
+    def _init(self, project=None, database=None, activity=None):
         """Provide initial data.
 
         Can't override __init__, because this is an old style class, i.e. there is no support for ``super``."""
@@ -98,6 +115,7 @@ class ActivityBrowser(cmd.Cmd):
         self.set_current_options(None)
         self.autosave = config.p.get('ab_autosave', False)
         self.history = self.reformat_history(config.p.get('ab_history', []))
+        self.load_project(project)
         self.load_database(database)
         self.load_activity(activity)
         # self.found_activities = []
@@ -110,11 +128,13 @@ class ActivityBrowser(cmd.Cmd):
     ######################
 
     def choose_option(self, opt):
-        """Go to option ``option``"""
+        """Go to option ``opt``"""
         try:
             index = int(opt)
             if index >= len(self.current_options.get('formatted', [])):
                 print("There aren't this many options")
+            elif self.current_options['type'] == 'projects':
+                self.choose_project(self.current_options['options'][index])
             elif self.current_options['type'] == 'databases':
                 self.choose_database(self.current_options['options'][index])
             elif self.current_options['type'] == 'activities':
@@ -147,7 +167,7 @@ class ActivityBrowser(cmd.Cmd):
                 print("[%(index)i]: %(option)s" % \
                     {'option': obj, 'index': index + begin}
                 )
-            print("\nPage %(g)s%(page)i of %(g)s%(maxp)s. Use n (next page) and p (previous page) to navigate." % {
+            print("\nPage %(page)i of %(maxp)s. Use n (next page) and p (previous page) to navigate." % {
                 'page': self.page,
                 'maxp': self.max_page
             })
@@ -209,7 +229,7 @@ class ActivityBrowser(cmd.Cmd):
         if product:
             product += u', ' % {}
         kurtz['product'] = product
-        return "%(g)s%(name)s (%(product)s%(location)s)" % kurtz
+        return "%(name)s (%(product)s%(location)s)" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
@@ -225,7 +245,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
     def format_history(self, command):
         kind, obj = command
         if kind == 'database':
-            return "Db: %(g)s%(name)s" % {'name': obj}
+            return "Db: %(name)s" % {'name': obj}
         else:
             return "Act: %(act)s" % {'act': self.format_activity(obj)}
 
@@ -233,6 +253,46 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         """Convert lists to tuples (from JSON serialization)"""
         return [(x[0], tuple(x[1])) if x[0] == 'activity' else tuple(x)
             for x in json_data]
+
+    #######################
+    # Project  management #
+    #######################
+
+    def choose_project(self, project):
+        if self.project and self.project == project:
+            pass
+        #elif self.project and self.project == project:
+        else:
+            self.unknown_project()
+        self.project = project
+        projects.current = project
+        self.set_current_options(None)
+        self.update_prompt()
+
+
+    def load_project(self, project):
+        self.project = project
+    
+
+
+    def list_projects(self):
+        pjs = [p.name for p in projects]
+        self.set_current_options({
+            'type':'projects',
+            'options':pjs,
+            'formatted': [
+                "%(name)s" %
+                #"%(g)s%(name)s (%(number)s databases)" %
+                {
+                    'name': name
+				#, 'number': databases[name].get('number', 'unknown')
+                }
+            for name in pjs]
+        })
+        self.print_current_options("Projects")
+
+    def unknown_project(self):
+        self.project = None
 
     #######################
     # Database management #
@@ -276,7 +336,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             'type': 'databases',
             'options': dbs,
             'formatted': [
-                "%(g)s%(name)s (%(number)s activities/flows)" %
+                "%(name)s (%(number)s activities/flows)" %
                 {
                     'name': name, 'number': databases[name].get('number', 'unknown')
                 }
@@ -327,7 +387,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         self.set_current_options({
             'type': 'activities',
             'options': [obj['key'] for obj in objs],
-            'formatted': ["%(amount).3g %(unit)s %(g)s%(name)s (%(location)s)" \
+            'formatted': ["%(amount).3g %(unit)s %(name)s (%(location)s)" \
                 % obj for obj in objs]
         })
 
@@ -465,7 +525,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                 amount = prod[0]['amount']
             else:
                 amount = 1.
-            print("""\n%(g)s%(name)s
+            print("""\n%(name)s
 
     Database: %(database)s
     ID: %(id)s
@@ -498,6 +558,10 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             self.print_current_options()
         else:
             print("No current options")
+
+    def do_lpj(self, arg):
+        """List available projects"""
+        self.list_projects()
 
     def do_ldb(self, arg):
         """List available databases"""
@@ -556,10 +620,12 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         elif not arg:
             print("Must provide search string" % {})
         else:
-            results = Database(self.database).query(Filter('name', 'ihas', arg))
+            #results = Database(self.database).query(Filter('name', 'ihas', arg))
+            results = Database(self.database).search(arg)
+            results_keys = [r.key for r in results] 
             self.set_current_options({
                 'type': 'activities',
-                'options': results.keys(),
+                'options': results_keys,
                 'formatted': [self.format_activity(key) for key in results]
                 })
             self.print_current_options(
@@ -602,6 +668,7 @@ def main():
     arguments = docopt(__doc__, version='Brightway2 Activity Browser 1.0')
     activitybrowser = ActivityBrowser()
     activitybrowser._init(
+        project=arguments['<project>'],
         database=arguments['<database>'],
         activity=arguments['<activity-id>']
     )
