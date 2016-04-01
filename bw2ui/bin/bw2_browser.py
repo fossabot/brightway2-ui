@@ -17,6 +17,8 @@ Options:
 
 """
 from __future__ import print_function
+import six
+from past.builtins import basestring
 from docopt import docopt
 from brightway2 import *
 import cmd
@@ -29,20 +31,6 @@ import time
 import traceback
 import webbrowser
 
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
 
 GRUMPY = itertools.cycle((
     "This makes no damn sense: ",
@@ -400,7 +388,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             if db_name in databases[db]['depends']:
                 dbs.append(db)
         for db in dbs:
-            for k, v in Database(db).load().iteritems():
+            for k, v in six.iteritems(Database(db).load()):
                 if k == activity:
                     continue
                 for exc in v.get('exchanges', []):
