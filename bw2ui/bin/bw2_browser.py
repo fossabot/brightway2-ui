@@ -17,7 +17,7 @@ Options:
 
 """
 from __future__ import print_function
-import six
+from future.utils import iteritems
 from past.builtins import basestring
 from docopt import docopt
 from brightway2 import *
@@ -388,7 +388,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             if db_name in databases[db]['depends']:
                 dbs.append(db)
         for db in dbs:
-            for k, v in six.iteritems(Database(db).load()):
+            for k, v in iteritems(Database(db).load()):
                 if k == activity:
                     continue
                 for exc in v.get('exchanges', []):
