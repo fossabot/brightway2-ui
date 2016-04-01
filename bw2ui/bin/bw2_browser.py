@@ -188,13 +188,19 @@ class ActivityBrowser(cmd.Cmd):
             name = Database(self.activity[0]).load()[self.activity].get('name', "Unknown")
             if allowed_length < len(name):
                 name = name[:allowed_length]
-            self.prompt = "@(%(db)s) %(n)s >> " % {
+            self.prompt = "%(pj)s@(%(db)s) %(n)s >> " % {
+                'pj': self.project,
                 'db': self.database,
                 'n': name
             }
         elif self.database:
-            self.prompt = "@(%(name)s) >> " % {
+            self.prompt = "%(pj)s@(%(name)s) >> " % {
+                'pj': self.project,
                 'name': self.database
+            }
+        elif self.project:
+            self.prompt = "%(pj)s >> " % {
+                'pj': self.project
             }
         else:
             self.prompt = ">> "
@@ -214,10 +220,12 @@ class ActivityBrowser(cmd.Cmd):
             kurtz['name'] = kurtz['name'][:max_length] + "..."
         # TODO: Can adjust string lengths with product name, but just ignore for now
         product = ds.get(u'reference product', '')
+        categories = ds.get(u'categories', '')
         if product:
             product += u', ' % {}
         kurtz['product'] = product
-        return "%(name)s (%(product)s%(location)s)" % kurtz
+        kurtz['categories'] = categories 
+        return "%(name)s (%(product)s%(location)s%(categories)s)" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
@@ -252,16 +260,33 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         #elif self.project and self.project == project:
         else:
             self.unknown_project()
-        self.project = project
         projects.current = project
+        self.project = project
+        self.history.append(('project', project))
+        if self.autosave:
+            config.p['ab_project'] = self.project
+            config.p['ab_history'] = self.history[-10:]
+            config.save_preferences()
         self.set_current_options(None)
+        self.activity=None
+        self.database=None
+        self.list_databases()
         self.update_prompt()
 
-
     def load_project(self, project):
-        self.project = project
-    
-
+        if project:
+            if project not in projects:
+                print("Project %(name)s not found" % \
+                        {'name': project})
+                load_project(None)
+            else:
+                self.project = project
+                projects.current = project
+        elif config.p.get('ab_project', False):
+            self.project = config.p['ab_project']
+        else:
+            self.project= None
+            self.list_projects()
 
     def list_projects(self):
         pjs = [p.name for p in projects]
@@ -269,11 +294,9 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             'type':'projects',
             'options':pjs,
             'formatted': [
-                "%(name)s" %
-                #"%(g)s%(name)s (%(number)s databases)" %
-                {
+                "%(name)s" % {
                     'name': name
-				#, 'number': databases[name].get('number', 'unknown')
+                #, 'number': databases[name].get('number', 'unknown')
                 }
             for name in pjs]
         })
@@ -316,7 +339,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             self.database = config.p['ab_database']
         else:
             self.database = None
-            self.list_databases()
+            #self.list_databases()
 
     def list_databases(self):
         dbs = sorted(databases.list)
@@ -460,6 +483,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         """Clear preferences. Only for development."""
         self.autosave = False
         del config.p['ab_autosave']
+        del config.p['ab_project']
         del config.p['ab_database']
         del config.p['ab_activity']
         del config.p['ab_history']
