@@ -210,7 +210,7 @@ class ActivityBrowser(cmd.Cmd):
     ##############
 
     def format_activity(self, key, max_length=10000):
-        ds = Database(key[0]).load()[key]
+        ds = Database(key[0]).get(key[1])
         kurtz = {
             'location': ds.get('location', ''),
             'name': ds.get('name', "Unknown"),
@@ -225,7 +225,7 @@ class ActivityBrowser(cmd.Cmd):
             product += u', ' % {}
         kurtz['product'] = product
         kurtz['categories'] = categories 
-        return "%(name)s (%(product)s%(location)s%(categories)s)" % kurtz
+        return "%(name)s (%(product)s%(location)s) [%(categories)s]" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
@@ -385,7 +385,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         for exc in es:
             if exc['type'] != kind:
                 continue
-            ds = Database(exc['input'][0]).load()[exc['input']]
+            ds = Database(exc['input'][0]).get(exc['input'][1])
             objs.append({
                 'name': ds.get('name', "Unknown"),
                 'location': ds.get('location', config.global_location),
@@ -414,7 +414,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             for k, v in iteritems(Database(db).load()):
                 if k == activity:
                     continue
-                for exc in v.get('exchanges', []):
+                for exc in v.get("exchanges", []):
                     if activity == exc['input']:
                         excs.append({
                             'type': 7,  # Dummy value
@@ -475,7 +475,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
+            es = Database(self.activity[0]).get(self.activity[1]).exchanges()
             self.format_exchanges_as_options(es, 'biosphere')
             self.print_current_options("Biosphere flows")
 
@@ -496,7 +496,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            ds = Database(self.activity[0]).load()[self.activity]
+            ds = Database(self.activity[0]).get(self.activity[1])
             unit = ds.get('unit', '')
             excs = self.get_downstream_exchanges(self.activity)
             self.format_exchanges_as_options(excs, 7, unit)
@@ -529,8 +529,8 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("No current activity")
         else:
-            ds = Database(self.activity[0]).load()[self.activity]
-            prod = [x for x in ds.get("exchanges", []) if x['input'] == self.activity]
+            ds = Database(self.activity[0]).get(self.activity[1])
+            prod = [x for x in ds.exchanges() if x['input'] == self.activity]
             if u'production amount' in ds and ds[u'production amount']:
                 amount = ds[u'production amount']
             elif len(prod) == 1:
@@ -557,9 +557,9 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                 'unit': ds.get('unit', ''),
                 'categories': ', '.join(ds.get('categories', [])),
                 'location': ds.get('location', config.global_location),
-                'tech': len([x for x in ds.get('exchanges', [])
+                'tech': len([x for x in ds.exchanges()
                     if x['type'] == 'technosphere']),
-                'bio': len([x for x in ds.get('exchanges', [])
+                'bio': len([x for x in ds.exchanges()
                     if x['type'] == 'biosphere']),
                 'consumers': len(self.get_downstream_exchanges(self.activity)),
             })
@@ -649,7 +649,8 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
+            #es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
+            es = Database(self.activity[0]).get(self.activity[1]).exchanges()
             self.format_exchanges_as_options(es, 'technosphere')
             self.print_current_options("Upstream inputs")
 
