@@ -185,7 +185,7 @@ class ActivityBrowser(cmd.Cmd):
         """ update prompt and upstream/downstream activity lists """
         if self.activity:
             allowed_length = 76 - 8 - len(self.database)
-            name = Database(self.activity[0]).load()[self.activity].get('name', "Unknown")
+            name = Database(self.activity[0]).get(self.activity[1]).get('name', "Unknown")
             if allowed_length < len(name):
                 name = name[:allowed_length]
             self.prompt = "%(pj)s@(%(db)s) %(n)s >> " % {
@@ -225,7 +225,7 @@ class ActivityBrowser(cmd.Cmd):
             product += u', ' % {}
         kurtz['product'] = product
         kurtz['categories'] = categories 
-        return "%(name)s (%(product)s%(location)s) [%(categories)s]" % kurtz
+        return "%(name)s (%(product)s%(location)s) %(categories)s" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
@@ -414,7 +414,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             for k, v in iteritems(Database(db).load()):
                 if k == activity:
                     continue
-                for exc in v.get("exchanges", []):
+                for exc in v.get('exchanges', []):
                     if activity == exc['input']:
                         excs.append({
                             'type': 7,  # Dummy value
