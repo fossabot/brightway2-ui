@@ -196,14 +196,14 @@ def index():
         "number": value.get("number", 0),
         "version": value.get("version", 0),
         "url": url_for('database_explorer', name=key)
-        } for key, value in databases.iteritems()]
+        } for key, value in databases.items()]
     dbs.sort(key=lambda x: x['name'])
     ms = [{
         "name": " - ".join(key),
         "unit": value.get("unit", "unknown"),
         "num_cfs": value.get("num_cfs", 0),
         "url": url_for("method_explorer", abbreviation=value['abbreviation'])
-    } for key, value in methods.iteritems()]
+    } for key, value in methods.items()]
     ms.sort(key = lambda x: x['name'])
     context = {
         'databases': JsonWrapper.dumps(dbs),
@@ -298,7 +298,7 @@ def database_explorer(name):
         'url': url_for('activity_dataset-canonical', database=name, code=key[1]),
         'num_exchanges': len(value.get('exchanges', [])),
         'key': key
-        } for key, value in data.iteritems()]
+        } for key, value in data.items()]
     json_data.sort(key = lambda x: x['name'])
     return render_template(
         "database.html",
@@ -532,7 +532,7 @@ def activity_names(name):
             "l": value.get("location", "Unknown"),
             "n": value.get("name", "Unknown"),
             "k": key
-        }} for key, value in Database(name).load().iteritems()])
+        }} for key, value in Database(name).load().items()])
 
 
 def get_tuple_index(t, i):
@@ -551,7 +551,7 @@ def lca():
             "unit": value.get("unit", "unknown"),
             "num_cfs": value.get("num_cfs", 0),
             "url": url_for("method_explorer", abbreviation=value['abbreviation'])
-        } for key, value in methods.iteritems()]
+        } for key, value in methods.items()]
         ms.sort(key = lambda x: x['name'])
         return render_template("select.html",
             db_names=[x for x in databases.list if x != config.biosphere],
@@ -599,7 +599,7 @@ def report(uuid):
 
 @bw2webapp.route("/method/<abbreviation>")
 def method_explorer(abbreviation):
-    method = [key for key, value in methods.iteritems()
+    method = [key for key, value in methods.items()
         if value[u'abbreviation'] == abbreviation]
     if not len(method) == 1:
         abort(404)
@@ -646,7 +646,7 @@ def database_tree(name, code, direction="backwards"):
         return [{"name": short_name(data[k]["name"]),
             "children": format_d(v) if isinstance(v, dict) \
                 else [{"name": short_name(data[x]["name"])} for x in v]
-            } for k, v in d.iteritems()]
+            } for k, v in d.items()]
 
     if name not in databases:
         abort(404)

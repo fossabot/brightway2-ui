@@ -361,7 +361,7 @@ Autosave is turned %(autosave)s.""" % _({'dd': config.dir,
             if db_name in databases[db]['depends']:
                 dbs.append(db)
         for db in dbs:
-            for k, v in Database(db).load().iteritems():
+            for k, v in Database(db).load().items():
                 if k == activity:
                     continue
                 for exc in v.get('exchanges', []):

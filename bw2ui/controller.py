@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
+from eight import *
+from builtins import input
+
 from brightway2 import databases, methods, Database, config, reset_meta
 from bw2data.io import download_biosphere, BW2Package, download_methods
 from bw2data.logs import upload_logs_to_server
@@ -119,14 +122,13 @@ class Controller(object):
                 exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
                 return
             question_text = "\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):"
-            response = raw_input(question_text)
+            response = input(question_text)
             if response != "y":
                 exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
                 return
             os.mkdir(data_dir)
             config.dir = data_dir
             reset_meta()
-        config.create_basic_directories()
         download_biosphere()
         download_methods()
         exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)

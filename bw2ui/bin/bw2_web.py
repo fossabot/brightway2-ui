@@ -29,7 +29,6 @@ import webbrowser
 def main():
     clean_jobs_directory()
     # Needed because we open an error log handler below
-    config.create_basic_directories()
 
     args = docopt(__doc__, version='Brightway2 Web UI 1.0')
     port = int(args.get("--port", False) or 5000)  # + random.randint(0, 999))
