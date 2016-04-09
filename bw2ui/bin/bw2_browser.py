@@ -314,13 +314,9 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
     #######################
 
     def choose_project(self, project):
-        if self.project and self.project == project:
-            pass
-        #elif self.project and self.project == project:
-        else:
-            self.unknown_project()
-        projects.current = project
-        self.project = project
+        if self.project == project:
+            return
+        projects.current = self.project = project
         self.history.append(('project', project))
         if self.autosave:
             config.p['ab_project'] = self.project
@@ -359,9 +355,6 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             for name in pjs]
         })
         self.print_current_options("Projects")
-
-    def unknown_project(self):
-        self.project = None
 
     #######################
     # Database management #
