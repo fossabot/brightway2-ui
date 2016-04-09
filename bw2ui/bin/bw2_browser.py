@@ -805,7 +805,6 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         elif not arg:
             print("Must provide search string" % {})
         else:
-            #results = Database(self.database).query(Filter('name', 'ihas', arg))
             results = Database(self.database).search(arg)
             results_keys = [r.key for r in results]
             self.set_current_options({
