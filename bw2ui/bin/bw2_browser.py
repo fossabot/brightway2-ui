@@ -35,7 +35,7 @@ try:
     from tabulate import tabulate
     tabulate_available = True
 except ImportError:
-    tabulate_available = False 
+    tabulate_available = False
 
 
 GRUMPY = itertools.cycle((
@@ -209,7 +209,7 @@ class ActivityBrowser(cmd.Cmd):
         self.prompt = ""
         if self.activity:
             allowed_length = 76 - 8 - len(self.database)
-            activity_ = Database(self.activity[0]).get(self.activity[1])
+            activity_ = get_activity(self.activity)
             name = activity_.get('name', "Unknown")
             categories = activity_.get('categories',[])
             if allowed_length < len(name):
@@ -253,7 +253,7 @@ class ActivityBrowser(cmd.Cmd):
     ##############
 
     def format_activity(self, key, max_length=10000):
-        ds = Database(key[0]).get(key[1])
+        ds = get_activity(key)
         kurtz = {
             'location': ds.get('location', ''),
             'name': ds.get('name', "Unknown"),
@@ -267,7 +267,7 @@ class ActivityBrowser(cmd.Cmd):
         if product:
             product += u', ' % {}
         kurtz['product'] = product
-        kurtz['categories'] = categories 
+        kurtz['categories'] = categories
         return "%(name)s (%(product)s%(location)s) %(categories)s" % kurtz
 
     def format_defaults(self):
@@ -302,8 +302,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             if activity:
                 cfs = [cf for cf in cfs if cf[0] == activity]
             for cf in cfs:
-                activity_key_pair = cf[0]
-                activity_ = Database(activity_key_pair[0]).get(activity_key_pair[1])
+                activity_ = get_activity(cf[0])
                 line =[activity_.get('name','Unknown'),
                         activity_.get('categories',[]), m[1], m[2], cf[1],
                         method_.metadata['unit']]
@@ -452,7 +451,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         for exc in es:
             if exc['type'] != kind:
                 continue
-            ds = Database(exc['input'][0]).get(exc['input'][1])
+            ds = get_activity(exc['input'])
             objs.append({
                 'name': ds.get('name', "Unknown"),
                 'location': ds.get('location', config.global_location),
@@ -471,19 +470,17 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
 
     def get_downstream_exchanges(self, activity):
         """Get the exchanges that consume this activity's product"""
-        db_name = activity[0]
-        activity_key = activity[1]
-        activity_ = Database(db_name).get(activity_key)
+        activity = get_activity(activity)
         excs = []
-        exchanges = activity_.upstream()
+        exchanges = activity.upstream()
         for exc in exchanges:
             if activity == exc['input'] and not activity == exc['output']:
                 excs.append({
-                    'type': 7,  # Dummy value
+                    'type': exc.get('type', 'Unknown'),
                     'input': exc['output'],
                     'amount': exc['amount'],
                     'key': exc['output'][1],
-                    'name': exc['name'],
+                    'name': exc.get('name', 'Unknown'),
                 })
         excs.sort(key=lambda x: x['name'])
         return excs
@@ -502,8 +499,8 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                     {'name': method})
                 self.load_method(None)
             else:
-                self.method = method[0]  
-                self.category = method[1] 
+                self.method = method[0]
+                self.category = method[1]
         elif config.p.get('ab_method', False):
             self.method = config.p['ab_method']
         else:
@@ -524,7 +521,6 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                 'formatted': [
                     "%(name)s" % {
                         'name': name
-                    #, 'number': databases[name].get('number', 'unknown')
                     }
                 for name in m_names ]
             })
@@ -552,7 +548,6 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             'formatted': [
                 "%(name)s" % {
                     'name': name
-                #, 'number': databases[name].get('number', 'unknown')
                 }
             for name in c_names ]
         })
@@ -560,7 +555,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         self.update_prompt()
 
     def choose_category(self, category):
-        self.category = category 
+        self.category = category
         self.history.append(('category', category))
         if self.autosave:
             config.p['ab_category'] = self.category
@@ -636,13 +631,13 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            es = Database(self.activity[0]).get(self.activity[1]).exchanges()
+            es = get_activity(self.activity).exchanges()
             self.format_exchanges_as_options(es, 'biosphere')
             self.print_current_options("Biosphere flows")
 
     def do_cfs(self, arg):
         """Print cfs of biosphere flows."""
-        if (self.activity and self.database == 'biosphere3') or self.method:  # show the cfs for the given flow 
+        if (self.activity and self.database == 'biosphere3') or self.method:  # show the cfs for the given flow
             current_methods = [m for m in methods if m[0] == self.method]
             if self.category:  # show cfs for current cat, current act
                 current_methods = [
@@ -676,7 +671,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            ds = Database(self.activity[0]).get(self.activity[1])
+            ds = get_activity(self.activity)
             unit = ds.get('unit', '')
             excs = self.get_downstream_exchanges(self.activity)
             self.format_exchanges_as_options(excs, 7, unit)
@@ -709,7 +704,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("No current activity")
         else:
-            ds = Database(self.activity[0]).get(self.activity[1])
+            ds = get_activity(self.activity)
             prod = [x for x in ds.exchanges() if x['input'] == self.activity]
             if u'production amount' in ds and ds[u'production amount']:
                 amount = ds[u'production amount']
@@ -827,7 +822,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         else:
             #results = Database(self.database).query(Filter('name', 'ihas', arg))
             results = Database(self.database).search(arg)
-            results_keys = [r.key for r in results] 
+            results_keys = [r.key for r in results]
             self.set_current_options({
                 'type': 'activities',
                 'options': results_keys,
@@ -842,8 +837,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
         if not self.activity:
             print("Need to choose an activity first")
         else:
-            #es = Database(self.activity[0]).load()[self.activity].get("exchanges", [])
-            es = Database(self.activity[0]).get(self.activity[1]).technosphere()
+            es = get_activity(self.activity).technosphere()
             self.format_exchanges_as_options(es, 'technosphere')
             self.print_current_options("Upstream inputs")
 
