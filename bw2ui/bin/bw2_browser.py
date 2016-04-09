@@ -31,11 +31,7 @@ import time
 import traceback
 import webbrowser
 import pprint
-try:
-    from tabulate import tabulate
-    tabulate_available = True
-except ImportError:
-    tabulate_available = False
+from tabulate import tabulate
 
 
 GRUMPY = itertools.cycle((
@@ -309,11 +305,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                 table_lines.append(line)
         if table_lines:
             print("CFS")
-            if tabulate_available:
-                print(tabulate(table_lines))
-            else:
-                for l in table_lines:
-                    print("{} {} {}/{}\t{}\t{}".format(*l))
+            print(tabulate(table_lines))
         else:
             print("Not characterized by method")
 
