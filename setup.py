@@ -37,7 +37,8 @@ setup(
     license=open('LICENSE.txt').read(),
     install_requires=[
         "brightway2",
-        "bw2analyzer>=0.6.1"
+        "bw2analyzer>=0.6.1",
+        "tabulate",
     ],
     entry_points = {
         'console_scripts': [
