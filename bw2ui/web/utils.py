@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
+from eight import *
+
 from brightway2 import projects, JsonWrapper
 from flask import Response
 import os

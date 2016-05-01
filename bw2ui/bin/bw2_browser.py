@@ -16,22 +16,23 @@ Options:
   --version     Show version.
 
 """
-from __future__ import print_function
-from future.utils import iteritems
-from past.builtins import basestring
-from docopt import docopt
+from __future__ import print_function, unicode_literals
+from eight import *
+
 from brightway2 import *
+from docopt import docopt
+from future.utils import iteritems
+from tabulate import tabulate
 import cmd
 import codecs
 import itertools
 import math
 import os
+import pprint
 import threading
 import time
 import traceback
 import webbrowser
-import pprint
-from tabulate import tabulate
 
 
 GRUMPY = itertools.cycle((
@@ -411,7 +412,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
 
     def load_activity(self, activity):
         """Load given or default activity on start"""
-        if isinstance(activity, basestring):
+        if isinstance(activity, str):
             # Input parameter
             self.choose_activity((self.database, activity))
         elif config.p.get('ab_activity', None):

@@ -36,14 +36,17 @@ setup(
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
     install_requires=[
-        "brightway2",
-        "bw2analyzer>=0.6.1",
+        "brightway2>=2.0.1",
+        "docopt",
+        "eight",
+        "flask",
+        "jinja2",
+        "stats_arrays",
         "tabulate",
     ],
     entry_points = {
         'console_scripts': [
             'bw2-web        = bw2ui.bin.bw2_web:main',
-            'bw2-controller = bw2ui.bin.bw2_controller:main',
             'bw2-browser    = bw2ui.bin.bw2_browser:main'
         ]
     },

@@ -1,21 +1,32 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
+from __future__ import print_function, unicode_literals
+from eight import *
+from future.standard_library import install_aliases
+install_aliases()
+
 from .jobs import JobDispatch, InvalidJob
 from .utils import get_job_id, get_job, set_job_status, json_response, \
     get_dynamic_media_folder
 from bw2analyzer import DatabaseExplorer, SerializedLCAReport, DatabaseHealthCheck
 from bw2calc.speed_test import SpeedTest
 from bw2calc.lca import LCA
-from bw2data import config, databases, methods, Database, Method, \
-    JsonWrapper, set_data_dir, bw2setup
+from bw2data import (
+    Database,
+    databases,
+    JsonWrapper,
+    Method,
+    methods,
+    preferences,
+    projects,
+)
 from bw2data.search import Searcher
-# from bw2data.io import Ecospold1Importer, EcospoldImpactAssessmentImporter
+from bw2io import bw2setup
 from flask import url_for, render_template, request, redirect, abort
 from stats_arrays import uncertainty_choices
-from urllib import unquote as _unquote
+from urllib.parse import unquote
 import multiprocessing
 import os
-import urllib2
+import pprint
 
 from . import bw2webapp
 
@@ -31,7 +42,7 @@ Stupid Javascript (insert joke here...) and jQueryFilePicker
 http://stackoverflow.com/questions/300445/how-to-unquote-a-urlencoded-unicode-string-in-python
 https://github.com/simogeo/Filemanager/issues/40
     """
-    result = _unquote(source)
+    result = unquote(source)
     if '%u' in result:
         result = result.replace('%u', '\\u').decode('unicode_escape')
     return result
@@ -123,37 +134,38 @@ def fp_api():
 ### Getting started ###
 #######################
 
-def get_windows_drives():
-    if not config._windows:
-        return {'windows': False}
-    else:
-        return {
-            'windows': True,
-            'drive_letters': get_windows_drive_letters(),
-            'current_drive': os.path.splitdrive(os.getcwd())[0]
-        }
+# def get_windows_drives():
+#     if not config._windows:
+#         return {'windows': False}
+#     else:
+#         return {
+#             'windows': True,
+#             'drive_letters': get_windows_drive_letters(),
+#             'current_drive': os.path.splitdrive(os.getcwd())[0]
+#         }
 
-@bw2webapp.route('/start/path', methods=["POST"])
-def set_path():
-    path = urllib2.unquote(request.form["path"])
-    dirname = urllib2.unquote(request.form["dirname"])
-    set_data_dir(os.path.join(path, dirname))
-    return "1"
-
-
-@bw2webapp.route('/start/biosphere')
-def install_biosphere():
-    bw2setup()
-    return "1"
+# @bw2webapp.route('/start/path', methods=["POST"])
+# def set_path():
+#     path = urllib2.unquote(request.form["path"])
+#     dirname = urllib2.unquote(request.form["dirname"])
+#     set_data_dir(os.path.join(path, dirname))
+#     return "1"
 
 
-@bw2webapp.route('/start')
-def start():
-    return render_template(
-        "start.html",
-        root_path=JsonWrapper.dumps(os.path.abspath("/")),
-        **get_windows_drives()
-    )
+# @bw2webapp.route('/start/biosphere')
+# def install_biosphere():
+#     bw2setup()
+#     return "1"
+
+
+# @bw2webapp.route('/start')
+# def start():
+#     TODO: Add projects
+#     return render_template(
+#         "start.html",
+#         root_path=JsonWrapper.dumps(os.path.abspath("/")),
+#         **get_windows_drives()
+#     )
 
 #################
 ### Importing ###
@@ -166,8 +178,8 @@ def import_database():
         return render_template("import-database.html", **get_windows_drives())
     else:
         raise NotImplemented
-        path = urllib2.unquote(request.form["path"])
-        name = urllib2.unquote(request.form["name"])
+        path = unquote(request.form["path"])
+        name = unquote(request.form["name"])
         Ecospold1Importer().importer(path, name)
         return "1"
 
@@ -178,7 +190,7 @@ def import_method():
         return render_template("import-method.html", **get_windows_drives())
     else:
         raise NotImplemented
-        path = urllib2.unquote(request.form["path"])
+        path = unquote(request.form["path"])
         EcospoldImpactAssessmentImporter().importer(path)
         return "1"
 
@@ -206,7 +218,7 @@ def index():
     context = {
         'databases': JsonWrapper.dumps(dbs),
         'methods': JsonWrapper.dumps(ms),
-        'config': config
+        'projects': projects
         }
     return render_template("index.html", **context)
 
@@ -216,23 +228,18 @@ def ping():
     # Used to check if web UI is running
     return "pong"
 
+
 @bw2webapp.route('/settings', methods=["GET", "POST"])
 def change_settings():
     if request.method == "GET":
         context = {
-            "config": config,
+            "preferences": preferences,
             "cpu_count": multiprocessing.cpu_count(),
         }
         return render_template("settings.html", **context)
     else:
-        config.p["use_cache"] = bool(request.form.get("use-cache", False))
-        config.p["temp_dir_ok"] = bool(request.form.get("use-temp-dir", False))
-        config.p["cpu_cores"] = int(request.form["cpu-cores"])
-        config.p["iterations"] = int(request.form["iterations"])
-        config.p["upload_reports"] = bool(request.form.get(
-            "upload-reports", False))
-        config.p["report_server_url"] = request.form["report-server"]
-        config.save_preferences()
+        preferences["cpu_cores"] = int(request.form["cpu-cores"])
+        preferences["iterations"] = int(request.form["iterations"])
         return redirect(url_for('index'))
 
 
@@ -264,7 +271,7 @@ def whoosh_search():
         abort(400)
 
     data = {'results': Searcher().search(request_data['search_string'])}
-    print data
+    print(data)
     return json_response(data)
 
 
@@ -561,9 +568,9 @@ def lca():
         iterations = config.p.get("iterations", 1000)
         cpu_count = config.p.get("cpu_cores", None)
         report = SerializedLCAReport(demand, method, iterations, cpu_count)
-        print "Starting SerializedLCAReport calculation"
+        print("Starting SerializedLCAReport calculation")
         report.calculate()
-        print "Finished report calculation"
+        print("Finished report calculation")
         if config.p.get('upload_reports', 0):
             try:
                 report.upload()
@@ -571,7 +578,7 @@ def lca():
                 # No online report no cry
                 pass
         report.write()
-        print report.uuid
+        print(report.uuid)
         return report.uuid
 
 
@@ -662,7 +669,6 @@ def database_tree(name, code, direction="backwards"):
         "name": short_name(data[(name, code)]["name"]),
         "children": format_d(nodes)
     }
-    import pprint
     pprint.pprint(formatted)
     return render_template("database_tree.html",
         f=formatted,

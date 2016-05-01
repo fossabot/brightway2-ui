@@ -15,7 +15,10 @@ Options:
   --insecure    Allow outside connections (insecure!). Not with --debug.
 
 """
-from bw2data import config
+from __future__ import print_function, unicode_literals
+from eight import *
+
+from bw2data import projects
 from bw2ui.web import bw2webapp
 from docopt import docopt
 # from werkzeug.serving import run_simple
@@ -41,7 +44,7 @@ def main():
 
     if not debug:
         handler = logging.handlers.RotatingFileHandler(
-            os.path.join(config.dir, 'logs', "web-ui-error.log"),
+            os.path.join(projects.logs_dir, "web-ui-error.log"),
             maxBytes=50000, encoding='utf-8', backupCount=5)
         handler.setLevel(logging.WARNING)
         handler.setFormatter(logging.Formatter('''

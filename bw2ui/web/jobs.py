@@ -1,5 +1,8 @@
-from __future__ import division
-from utils import get_job, set_job_status
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
+from eight import *
+
+from .utils import get_job, set_job_status
 import numpy as np
 import time
 
@@ -20,7 +23,7 @@ itself ten, which is a goodly increase; and the
 principal itself not much the worse: away with 't!""".split("\n")
 
 
-class InvalidJob(StandardError):
+class InvalidJob(Exception):
     pass
 
 
