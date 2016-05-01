@@ -264,7 +264,7 @@ class ActivityBrowser(cmd.Cmd):
             product += u', ' % {}
         kurtz['product'] = product
         kurtz['categories'] = categories
-        return "%(name)s (%(product)s%(location)s) %(categories)s" % kurtz
+        return "%(name)s (%(product)s%(location)s%(categories)s)" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
@@ -390,7 +390,6 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
             self.database = config.p['ab_database']
         else:
             self.database = None
-            #self.list_databases()
 
     def list_databases(self):
         dbs = sorted(databases.list)
