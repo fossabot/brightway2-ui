@@ -17,7 +17,6 @@ Options:
 """
 from bw2data import config
 from bw2ui.web import bw2webapp
-from bw2ui.utils import clean_jobs_directory
 from docopt import docopt
 # from werkzeug.serving import run_simple
 import logging
@@ -27,9 +26,6 @@ import webbrowser
 
 
 def main():
-    clean_jobs_directory()
-    # Needed because we open an error log handler below
-
     args = docopt(__doc__, version='Brightway2 Web UI 1.0')
     port = int(args.get("--port", False) or 5000)  # + random.randint(0, 999))
     host = "0.0.0.0" if args.get("--insecure", False) else "localhost"
