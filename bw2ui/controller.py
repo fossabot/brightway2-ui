@@ -4,9 +4,8 @@ from eight import *
 from builtins import input
 
 from brightway2 import databases, methods, Database, config, reset_meta
-from bw2data.io import download_biosphere, BW2Package, download_methods
+from bw2io import download_biosphere, BW2Package, download_methods
 from bw2data.logs import upload_logs_to_server
-from bw2data.colors import Fore, safe_colorama
 from errors import UnknownAction, UnknownDatabase
 import datetime
 import os
@@ -14,8 +13,7 @@ import sys
 
 
 def exit(text):
-    with safe_colorama():
-        print(text)
+    print(text)
     sys.exit(1)
 
 
@@ -117,21 +115,21 @@ class Controller(object):
         if kwargs['--data-dir']:
             data_dir = unicode(kwargs['--data-dir'])
             if os.path.exists(data_dir):
-                exit(Fore.RED + "Error" + Fore.RESET + ": This directory already exists")
+                exit("Error: This directory already exists")
             elif not os.access(os.path.abspath(os.path.join(data_dir, "..")), os.W_OK):
-                exit(Fore.RED + "Error" + Fore.RESET + ": Given directory is not writable")
+                exit("Error: Given directory is not writable")
                 return
-            question_text = "\nPlease confirm that you want to create the following data directory:\n\t" + Fore.BLUE + data_dir + Fore.RESET + "\n" + Fore.GREEN + "y" + Fore.RESET + "/" + Fore.RED + "n" + Fore.RESET + " (or any other input):"
+            question_text = "\nPlease confirm that you want to create the following data directory:\n\t" + data_dir + "\n" + "y/(n or any other input):"
             response = input(question_text)
             if response != "y":
-                exit(Fore.RED + "\nSetup cancelled" + Fore.RESET)
+                exit("\nSetup cancelled")
                 return
             os.mkdir(data_dir)
             config.dir = data_dir
             reset_meta()
         download_biosphere()
         download_methods()
-        exit(Fore.GREEN + u"Brightway2 setup successful" + Fore.RESET)
+        exit(u"Brightway2 setup successful")
 
     def upload_logs(self, kwargs):
         response = upload_logs_to_server({'comment': kwargs.get('COMMENT', "")})
