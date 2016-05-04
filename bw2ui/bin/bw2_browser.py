@@ -29,6 +29,7 @@ import itertools
 import math
 import os
 import pprint
+import textwrap
 import threading
 import time
 import traceback
@@ -79,6 +80,7 @@ Working with databases:
 Working with activities:
     a id: Go to activity id in current database. Complex ids in quotes.
     i: Info on current activity.
+    ii: Extended Info on current activity.
     web: Open current activity in web browser. Must have bw2-web running.
     r: Choose a random activity from current database.
     u: List upstream activities (inputs for the current activity).
@@ -723,6 +725,59 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                     if x['type'] == 'biosphere']),
                 'consumers': len(self.get_downstream_exchanges(self.activity)),
             })
+
+    def do_ii(self, arg):
+        """Extended Info on current activity.
+
+        TODO: Colors could be improved."""
+        if not self.activity:
+            print("No current activity")
+        else:
+            ds = get_activity(self.activity)
+            prod = [x for x in ds.exchanges() if x['input'] == self.activity]
+            if u'production amount' in ds and ds[u'production amount']:
+                amount = ds[u'production amount']
+            elif len(prod) == 1:
+                amount = prod[0]['amount']
+            else:
+                amount = 1.
+            print("""Extended info \n%(name)s
+
+    Database: %(database)s
+    ID: %(id)s
+    Product: %(product)s
+    Production amount: %(amount).2g %(unit)s
+
+    Location: %(location)s
+    Categories: %(categories)s
+    Technosphere inputs: %(tech)s
+    Biosphere flows: %(bio)s
+    Reference flow used by: %(consumers)s\n""" % {
+                'name': ds.get('name', "Unknown"),
+                'product': ds.get(u'reference product') or ds.get('name', "Unknown"),
+                'database': self.activity[0],
+                'id': self.activity[1],
+                'amount': amount,
+                'unit': ds.get('unit', ''),
+                'categories': ', '.join(ds.get('categories', [])),
+                'location': ds.get('location', config.global_location),
+                'tech': len([x for x in ds.exchanges()
+                    if x['type'] == 'technosphere']),
+                'bio': len([x for x in ds.exchanges()
+                    if x['type'] == 'biosphere']),
+                'consumers': len(self.get_downstream_exchanges(self.activity)),
+            })
+            indentation_char = ' ' * 4
+            line_length = 50  # TODO: use dynamic line lenght or take from prefs
+            for field in [k for k in ds.keys() if k not in ["name", "product",
+                                                            "database", "location", "unit", "categories",
+                                                            "production amount", "code"]]:
+
+                field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
+                print("%(tab)s%(field)s:" % {'tab': indentation_char, 'field': field})
+                for l in field_contents:
+                    print("%(tab)s%(l)s" % {'tab': indentation_char * 2, 'l': l})
+
 
     def do_l(self, arg):
         """List current options"""
