@@ -19,6 +19,9 @@ Options:
 from __future__ import print_function, unicode_literals
 from eight import *
 
+import warnings
+warnings.filterwarnings('ignore', '.*Read only project.*')
+
 from brightway2 import *
 from docopt import docopt
 from future.utils import iteritems
@@ -271,7 +274,7 @@ class ActivityBrowser(cmd.Cmd):
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
-Autosave is turned %(autosave)s.""" % {'dd': config.dir,
+Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             'autosave': get_autosave_text(config.p.get('ab_autosave', False))}
         if config.p.get('ab_database', None):
             text += "\nDefault database: %(db)s." % \
@@ -319,7 +322,8 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
     def choose_project(self, project):
         if self.project == project:
             return
-        projects.current = self.project = project
+        self.project = project
+        projects.set_current(self.project, writable=False)
         self.history.append(('project', project))
         if self.autosave:
             config.p['ab_project'] = self.project
@@ -339,7 +343,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
                 load_project(None)
             else:
                 self.project = project
-                projects.current = project
+                projects.set_current(self.project, writable=False)
         elif config.p.get('ab_project', False):
             self.project = config.p['ab_project']
         else:
@@ -904,7 +908,7 @@ Autosave is turned %(autosave)s.""" % {'dd': config.dir,
 
 
 def main():
-    arguments = docopt(__doc__, version='Brightway2 Activity Browser 1.0')
+    arguments = docopt(__doc__, version='Brightway2 Activity Browser 2.0')
     activitybrowser = ActivityBrowser()
     activitybrowser._init(
         project=arguments['<project>'],
