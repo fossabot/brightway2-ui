@@ -36,7 +36,7 @@ setup(
     author_email="cmutel@gmail.com",
     license=open('LICENSE.txt').read(),
     install_requires=[
-        "brightway2>=2.0.1",
+        "brightway2>=2.1.0",
         "docopt",
         "eight",
         "flask",
