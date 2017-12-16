@@ -51,7 +51,7 @@ setup(
         ]
     },
     url="https://bitbucket.org/cmutel/brightway2-ui",
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     description='Web and command line user interface, part of the Brightway2 LCA framework',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
