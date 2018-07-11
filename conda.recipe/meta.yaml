@@ -1,0 +1,29 @@
+package:
+        name: bw2ui 
+        version: "0.18.3"
+
+source:
+        git_url: https://bitbucket.org/tomas_navarrete/brightway2-ui.git
+
+requirements:
+        build:
+                - python
+                - setuptools
+        run:
+                - python
+                - brightway2 >2.1.1
+                - docopt
+                - eight
+                - flask
+                - jinja2
+                - stats_arrays
+                - tabulate
+
+about:
+        home: https://bitbucket.org/tomas_navarrete/brightway2-ui
+        license: BSD
+        license_file: LICENSE.txt
+
+build:
+        entry_points:
+                - bw2-browser = bw2ui.bin.bw2_browser:main
