@@ -5,7 +5,6 @@ pipelines:
     - step:
         caches:
           - pip
-          - conda
         script: 
           - conda install conda-build anaconda-client
           - cd conda.recipe
