@@ -14,5 +14,5 @@ Setup
 + install brigtway2-ui using:
 
 ```
-pip install https://bitbucket.org/tomas_navarrete/brightway2-ui/get/master.zip
+conda install -c tomas_navarrete bw2ui 
 ```
