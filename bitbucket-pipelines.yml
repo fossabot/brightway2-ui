@@ -1,15 +1,14 @@
 image: continuumio/miniconda3
 
 pipelines:
-  default:
-    - step:
-        caches:
-          - pip
-        script: 
-          - conda install -y -q conda-build anaconda-client
-          - cd conda.recipe
-          - anaconda login --username $ANACONDA_USER --password $ANACONDA_PASSWORD
-          - conda config --set anaconda_upload yes
-          - conda build -c conda-forge -c cmutel -c haasad . 
-        deployment: production
+  branches:
+          master:
+            - step:
+                script: 
+                  - conda install -y -q conda-build anaconda-client
+                  - cd conda.recipe
+                  - anaconda login --username $ANACONDA_USER --password $ANACONDA_PASSWORD
+                  - conda config --set anaconda_upload yes
+                  - conda build -c conda-forge -c cmutel -c haasad . 
+                deployment: production
 
