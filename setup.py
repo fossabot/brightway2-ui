@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bw2ui',
-    version="0.18.3",
+    version="0.19.0",
     packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
     package_data={'bw2ui.web': [
         "static/blueprint/*.css",
@@ -43,6 +43,7 @@ setup(
         "jinja2",
         "stats_arrays",
         "tabulate",
+        "genson",
     ],
     entry_points = {
         'console_scripts': [
