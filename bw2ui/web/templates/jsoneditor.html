@@ -4,17 +4,17 @@
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
 
     <!-- jsoneditor -->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="jsoneditor/jsoneditor.css") }}">
-    <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/jsoneditor-min.js") }}"></script>
+    <!--<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="jsoneditor/jsoneditor.css") }}">-->
+    <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/jsoneditor.js") }}"></script>
 
     <!-- ace code editor -->
     <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/ace.js") }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/mode-json.js") }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/theme-textmate.js") }}"></script>
-    <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/theme-jsoneditor.js") }}"></script>
+    <!--<script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/theme-jsoneditor.js") }}"></script>-->
 
     <!-- json lint -->
-    <script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/jsonlint.js") }}"></script>
+    <!--<script type="text/javascript" src="{{ url_for('static', filename="jsoneditor/jsonlint.js") }}"></script>-->
 
     <style type="text/css">
         body {
@@ -28,7 +28,7 @@
             background-color: #f5f5f5;
         }
 
-        #jsoneditor {
+        #editor_holder {
             width: 100%;
             height: 800px;
         }
@@ -40,22 +40,25 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <div id="jsoneditor"></div>
-</div>
-<script type="text/javascript" >
-    var container = document.getElementById('jsoneditor');
+	<div class="container">
+	    <div id="editor_holder"></div>
+	</div>
+	<script type="text/javascript" >
+		var container = document.getElementById('editor_holder');
+		var json = {{ jsondata|safe }};
+		var jsonschema = {{ jsonchema|safe }};
+		var options = {
+			mode: 'tree',
+			modes: ['code', 'form', 'text', 'tree', 'view'], // allowed modes
 
-    var options = {
-        mode: 'tree',
-        modes: ['code', 'form', 'text', 'tree', 'view'], // allowed modes
-        error: function (err) {
-            alert(err.toString());
-        }
-    };
+			error: function (err) {
+				alert(err.toString());
+			},
+			schema: jsonschema
+			};
 
-    var json = {{ jsondata|safe }};
-    var editor = new jsoneditor.JSONEditor(container, options, json);
-</script>
+		var editor = new JSONEditor(container, options);
+		editor.setValue(json);
+	</script>
 </body>
 </html>

@@ -36,6 +36,7 @@ import textwrap
 import threading
 import time
 import traceback
+import uuid
 import webbrowser
 
 
@@ -90,6 +91,7 @@ Working with activities:
     d: List downstream activities (activities which consume current activity).
     b: List biosphere flows for the current activity.
     cfs: Show characterization factors for current activity and current method.
+    G: if a method and activity are selected, do an lcia of the activity.
 
 Working with methods:
     lm: List methods.
@@ -120,9 +122,6 @@ class ActivityBrowser(cmd.Cmd):
         self.load_database(database)
         self.load_activity(activity)
         self.load_method(method)
-        # self.found_activities = []
-        # self.filter_activities = []
-        # self.filter_mode = False
         self.update_prompt()
 
     ######################
@@ -906,6 +905,38 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
                 f.write(unicode(line) + "\n")
         print("History exported to %(fp)s" % {'fp': fp})
 
+    def do_G(self, arg):
+        """Do an LCIA of the selected activity + method[s] """ 
+        if self.activity and self.method:
+            activity_ = get_activity(self.activity)
+            method_key_list=[]
+
+            if self.method and self.category and self.subcategory:
+                method_id = (self.method, self.category, self.subcategory)
+                method_key_list.append(method_id)
+            elif self.method and self.category and self.subcategory is None:
+                for m in methods:
+                    if m[0] == self.method and m[1] == self.category:
+                        method_key_list.append(m)
+            elif self.method and self.category is None:
+                for m in methods:
+                    if m[0] == self.method:
+                        method_key_list.append(m)
+            bw2browser_cs = {'inv': [{self.activity:1}], 'ia': method_key_list}
+            tmp_cs_id = uuid.uuid1() 
+            calculation_setups[str(tmp_cs_id)] = bw2browser_cs
+            mlca = MultiLCA(str(tmp_cs_id))
+            formatted_res = [
+                    [mlca.methods[i][0], 
+                    mlca.methods[i][1],
+                    mlca.methods[i][2],
+                        Method(mlca.methods[i]).metadata['unit'], 
+                        score.pop()] for i,score in enumerate(mlca.results.T.tolist()) 
+                    ]
+            print(tabulate(formatted_res, 
+                headers=['method', 'category', 'subcategory', 'unit', 'score']))
+        else:
+            print("Select at least a method first")
 
 def main():
     arguments = docopt(__doc__, version='Brightway2 Activity Browser 2.0')

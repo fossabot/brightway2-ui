@@ -1,9 +1,0 @@
-syntax:glob
-build
-dist
-bw2ui/web/static/*
-*.pyc
-*~
-MANIFEST
-*.sublime*
-bw2ui.egg-info

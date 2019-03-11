@@ -18,10 +18,12 @@ from bw2data import (
     methods,
     preferences,
     projects,
+    get_activity,
 )
 from bw2data.search import Searcher
 from bw2io import bw2setup
 from flask import url_for, render_template, request, redirect, abort
+from genson import SchemaBuilder
 from stats_arrays import uncertainty_choices
 from urllib.parse import unquote
 import multiprocessing
@@ -200,7 +202,11 @@ def import_method():
 
 
 @bw2webapp.route('/')
-def index():
+@bw2webapp.route('/project/<projectname>')
+def index(projectname=None):
+    if projectname is None:
+        projectname = 'default'
+    projects.set_current(projectname)
     dbs = [{
         "name": key,
         "number": value.get("number", 0),
@@ -215,10 +221,15 @@ def index():
         "url": url_for("method_explorer", abbreviation=value['abbreviation'])
     } for key, value in methods.items()]
     ms.sort(key = lambda x: x['name'])
+    pjs = [{"name": p.name,
+        "url": url_for('index', projectname=p.name)
+        } 
+            for p in projects ]
     context = {
         'databases': JsonWrapper.dumps(dbs),
         'methods': JsonWrapper.dumps(ms),
-        'projects': projects
+        'projects': JsonWrapper.dumps(pjs),
+        'currentproject': projects.current
         }
     return render_template("index.html", **context)
 
@@ -335,9 +346,9 @@ def backup_database(database):
 def activity_dataset(database, code, sc_graph_json=False):
     if database not in databases:
         return abort(404)
-    data = Database(database).load(as_dict=True)
     try:
-        data = data[(database, code)]
+        the_activity = get_activity((database, code))
+        the_activity_data = the_activity.as_dict()
     except KeyError:
         return abort(404)
 
@@ -351,67 +362,73 @@ def activity_dataset(database, code, sc_graph_json=False):
     except:
         preferred_lcia = lca = single_score = False
 
-    rp = [x for x in data.get("exchanges", []) if x['type'] == "production"]
+    rp = [x for x in the_activity_data.get('exchanges', []) if x['type'] == "production"]
     if len(rp) == 1:
         rp = rp[0]['amount']
     else:
         rp = 0
 
     def format_sc(key):
-        ds = Database(key[0]).load(as_dict=True)[key]
+        a = get_activity(key)
         return {
             'id': "-".join(key),
             'children': [],
-            'name': ds.get('name', "Unknown"),
-            'data': {'url': url_for('activity_dataset-canonical', database=key[0], code=key[1])},
+            'name': a.get('name', "Unknown"),
+            'data': {'url': url_for('activity_dataset-canonical', 
+                database=a.get('database'), 
+                code=a.get('code'))},
         }
 
     if request.url_rule.rule[-9:] == "/sc_graph":
         data = {
         'id': database + "-" + code,
-        'name': data.get('name', "Unknown"),
+        'name': the_activity_data.get('name', "Unknown"),
         'data': {'origin': True},
         'children': [
             format_sc(exc['input'])
-            for exc in data.get('exchanges', [])
+            for exc in the_activity_data.get('exchanges', []) 
             if 'input' in exc
             and exc['type'] == "technosphere"
         ]}
+        print("Supply chain data")
+        print(data)
         return json_response(data)
 
     def format_ds(key, amount, biosphere=False):
-        ds = Database(key[0]).load()[key]
+        a = get_activity(key)
+        a_data = a.as_dict()
         data =  {
-            'name': ds.get('name', "Unknown"),
-            'categories': ",".join(ds.get('categories', [])),
-            'location': ds.get('location', ''),
-            'unit': ds.get('unit', ''),
-            'url': url_for('activity_dataset-canonical', database=key[0], code=key[1]),
+            'name': a_data.get('name', "Unknown"),
+            'categories': ",".join(a_data.get('categories', [])),
+            'location': a_data.get('location', ''),
+            'unit': a_data.get('unit', ''),
+            'url': url_for('activity_dataset-canonical', 
+                database=a_data.get('database'), 
+                code=a_data.get('code')),
             'amount': amount
             }
         if lca and not biosphere:
-            lca.redo_lcia({key: amount})
+            lca.redo_lcia({(a.get('database'), a.get('code')): amount})
             data['score'] = lca.score
         return data
 
-    biosphere = [format_ds(x['input'], x['amount'], True) for x in data.get("exchanges", []) if x['type'] == "biosphere"]
-    technosphere = [format_ds(x['input'], x['amount']) for x in data.get("exchanges", []) if x['type'] == "technosphere"]
+    biosphere = [format_ds(x['input'], x['amount'], True) for x in the_activity.biosphere()]
+    technosphere = [format_ds(x['input'], x['amount']) for x in the_activity.exchanges()]
 
     sc_data = {
         'id': database + "-" + code,
-        'name': data.get('name', "Unknown"),
+        'name': the_activity_data.get('name', "Unknown"),
         'data': {'origin': True},
         'children': [
             format_sc(exc['input'])
-            for exc in data.get('exchanges', [])
+            for exc in the_activity.technosphere()
             if 'input' in exc
-            and exc['type'] == "technosphere"
         ]
     }
 
     return render_template(
         "activity.html",
-        data=data,
+        data=the_activity_data,
         ref_prod=rp,
         edit_url=url_for("json_editor", database=database, code=code),
         sc_data=JsonWrapper.dumps(sc_data),
@@ -427,12 +444,14 @@ def activity_dataset(database, code, sc_graph_json=False):
 def json_editor(database, code):
     if database not in databases:
         return abort(404)
-    data = Database(database).load()
     try:
-        data = data[(database, code)]
+        data = get_activity((database, code)).as_dict()
+        builder = SchemaBuilder()
+        builder.add_object(data)
+        theschema = builder.to_schema()
     except KeyError:
         return abort(404)
-    return render_template("jsoneditor.html", jsondata=JsonWrapper.dumps(data))
+    return render_template("jsoneditor.html", jsondata=JsonWrapper.dumps(data), jsonchema=theschema)
 
 
 ###################

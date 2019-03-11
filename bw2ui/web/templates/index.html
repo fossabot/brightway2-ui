@@ -5,6 +5,11 @@
 {% endblock %}
 
 {% block body %}
+<h1>Project - {{ currentproject|safe }}</h1>
+<div class="span-11 colborder">
+    <h2>Projects</h2>
+    <div id="projects-table"></div>
+</div>
 <div class="span-11 colborder">
     <h2>Installed databases</h2>
     <div id="databases-table"></div>
@@ -82,8 +87,16 @@ var databasesColumns = [{
     editable: false
 }];
 
+var projectsColumns = [{
+	name: "name",
+	label: "Name",
+	cell: "string",
+	editable: false},
+];
+
 var methodData = {{ methods|safe }};
 var databasesData = {{ databases|safe }};
+var projectsData = {{ projects|safe }};
 
 var callback = function (model) {
     window.location = model.attributes.url;
@@ -91,5 +104,6 @@ var callback = function (model) {
 
 BackgridTable(methodData, methodColumns, "#methods-table", ['name'], "Filter by name", 20, callback);
 BackgridTable(databasesData, databasesColumns, "#databases-table", ['name'], "Filter by name", 10, callback);
+BackgridTable(projectsData, projectsColumns, "#projects-table", ['name'], "Filter by name", 10, callback);
 </script>
 {% endblock %}
