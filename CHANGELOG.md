@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.20.0] - 2019-04-24
+
+### Added
+
++ `aa` command lists all activities in an active database
+
 ## [0.19.0] - 2019-03-11
 
 ### Added
