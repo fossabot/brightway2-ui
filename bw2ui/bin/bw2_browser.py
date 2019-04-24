@@ -17,15 +17,7 @@ Options:
 
 """
 from __future__ import print_function, unicode_literals
-from eight import *
 
-import warnings
-warnings.filterwarnings('ignore', '.*Read only project.*')
-
-from brightway2 import *
-from docopt import docopt
-from future.utils import iteritems
-from tabulate import tabulate
 import cmd
 import codecs
 import itertools
@@ -37,7 +29,17 @@ import threading
 import time
 import traceback
 import uuid
+import warnings
 import webbrowser
+
+from brightway2 import *
+from docopt import docopt
+from eight import *
+from future.utils import iteritems
+from tabulate import tabulate
+
+warnings.filterwarnings('ignore', '.*Read only project.*')
+
 
 
 GRUMPY = itertools.cycle((
@@ -83,6 +85,7 @@ Working with databases:
 
 Working with activities:
     a id: Go to activity id in current database. Complex ids in quotes.
+    aa: List all activities in current database. aa name sorts the activities by name.
     i: Info on current activity.
     ii: Extended Info on current activity.
     web: Open current activity in web browser. Must have bw2-web running.
@@ -601,7 +604,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         """Go to activity id ``arg``"""
         key = (self.database, arg)
         if not self.database:
-            print("No database selected")
+            print("Please choose a database first")
         elif key not in Database(self.database).load():
             print("Invalid activity id")
         else:
@@ -859,7 +862,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def do_s(self, arg):
         """Search activity names."""
         if not self.database:
-            print("No current database" % {})
+            print("Please choose a database first")
         elif not arg:
             print("Must provide search string" % {})
         else:
@@ -906,7 +909,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         print("History exported to %(fp)s" % {'fp': fp})
 
     def do_G(self, arg):
-        """Do an LCIA of the selected activity + method[s] """ 
+        """Do an LCIA of the selected activity + method[s] """
         if self.activity and self.method:
             activity_ = get_activity(self.activity)
             method_key_list=[]
@@ -923,20 +926,43 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
                     if m[0] == self.method:
                         method_key_list.append(m)
             bw2browser_cs = {'inv': [{self.activity:1}], 'ia': method_key_list}
-            tmp_cs_id = uuid.uuid1() 
+            tmp_cs_id = uuid.uuid1()
             calculation_setups[str(tmp_cs_id)] = bw2browser_cs
             mlca = MultiLCA(str(tmp_cs_id))
             formatted_res = [
-                    [mlca.methods[i][0], 
+                    [mlca.methods[i][0],
                     mlca.methods[i][1],
                     mlca.methods[i][2],
-                        Method(mlca.methods[i]).metadata['unit'], 
-                        score.pop()] for i,score in enumerate(mlca.results.T.tolist()) 
+                        Method(mlca.methods[i]).metadata['unit'],
+                        score.pop()] for i,score in enumerate(mlca.results.T.tolist())
                     ]
-            print(tabulate(formatted_res, 
+            print(tabulate(formatted_res,
                 headers=['method', 'category', 'subcategory', 'unit', 'score']))
         else:
             print("Select at least a method first")
+
+    def do_aa(self, arg):
+        """List all activities in the current database. """
+        if not self.database:
+            print("Please choose a database first")
+        else:
+            db = Database(self.database)
+            activities = [activity for activity in db]
+            # Sort activities by name
+            if arg and isinstance(arg, str) and arg.lower() == 'name':
+                activities.sort(key= lambda a: a.get('name'))
+            activity_keys = [(self.database, activity['code'])
+                             for activity in activities]
+            formatted_activities = [self.format_activity(key) for key in
+                                    activity_keys]
+            self.set_current_options({
+                'type': 'activities',
+                'options': activity_keys,
+                'formatted': formatted_activities
+                })
+
+            self.print_current_options("Activities in database")
+
 
 def main():
     arguments = docopt(__doc__, version='Brightway2 Activity Browser 2.0')
