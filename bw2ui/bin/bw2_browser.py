@@ -24,6 +24,7 @@ import itertools
 import math
 import os
 import pprint
+import re
 import textwrap
 import threading
 import time
@@ -32,33 +33,43 @@ import uuid
 import warnings
 import webbrowser
 
-from brightway2 import *
+from brightway2 import (
+    Database,
+    Method,
+    MultiLCA,
+    calculation_setups,
+    config,
+    databases,
+    get_activity,
+    methods,
+    projects
+)
 from docopt import docopt
-from eight import *
-from future.utils import iteritems
 from tabulate import tabulate
 
-warnings.filterwarnings('ignore', '.*Read only project.*')
+warnings.filterwarnings("ignore", ".*Read only project.*")
 
+GRUMPY = itertools.cycle(
+    (
+        "This makes no damn sense: ",
+        "My mule has more sense than this: ",
+        "If 50 million people say a foolish thing, it is still a foolish thing: ",
+        "I have had enough of this kind of thing: ",
+        "What are you talking about? ",
+        "Are you kidding me? What is this: ",
+    )
+)
 
-
-GRUMPY = itertools.cycle((
-    "This makes no damn sense: ",
-    "My mule has more sense than this: ",
-    "If 50 million people say a foolish thing, it is still a foolish thing: ",
-    "I have had enough of this kind of thing: ",
-    "What are you talking about? ",
-    "Are you kidding me? What is this: ",
-    ))
-
-QUIET = itertools.cycle((
-    "You say it best when you say nothing at all...",
-    "Let us be silent, that we may hear the whispers of the gods.",
-    "Actions speak louder than words. But you didn't use either!",
-    "We have ways of making you talk, Mr. Bond!",
-    "Brevity is the soul of wit. But you can take it too far!",
-    "Do not underestimate the determination of a quiet man.",
-    ))
+QUIET = itertools.cycle(
+    (
+        "You say it best when you say nothing at all...",
+        "Let us be silent, that we may hear the whispers of the gods.",
+        "Actions speak louder than words. But you didn't use either!",
+        "We have ways of making you talk, Mr. Bond!",
+        "Brevity is the soul of wit. But you can take it too far!",
+        "Do not underestimate the determination of a quiet man.",
+    )
+)
 
 
 HELP_TEXT = """
@@ -82,10 +93,13 @@ Working with databases:
     ldb: List available databases.
     db name: Go to database name. No quotes needed.
     s string: Search activity names in current database with string.
+    s -loc {LOCATION} string: Search activity names in current database with \
+string and location LOCATION.
 
 Working with activities:
     a id: Go to activity id in current database. Complex ids in quotes.
-    aa: List all activities in current database. aa name sorts the activities by name.
+    aa: List all activities in current database. aa name sorts the activities \
+by name.
     i: Info on current activity.
     ii: Extended Info on current activity.
     web: Open current activity in web browser. Must have bw2-web running.
@@ -108,19 +122,22 @@ def get_autosave_text(autosave):
 
 class ActivityBrowser(cmd.Cmd):
     """A command line based Activity Browser for brightway2."""
+
     def _init(self, project=None, database=None, activity=None, method=None):
         """Provide initial data.
 
-        Can't override __init__, because this is an old style class, i.e. there is no support for ``super``."""
+        Can't override __init__, because this is an old style class
+        i.e. there is no support for ``super``."""
         # Have to print into here; otherwise only print during ``cmdloop``
-        if config.p.get('ab_activity', None):
+        if config.p.get("ab_activity", None):
             # Must be tuple, not a list
-            config.p['ab_activity'] = tuple(config.p['ab_activity'])
+            config.p["ab_activity"] = tuple(config.p["ab_activity"])
         print(HELP_TEXT + "\n" + self.format_defaults())
         self.page_size = 20
+        self.search_limit = config.p.get("search_limit", 100)
         self.set_current_options(None)
-        self.autosave = config.p.get('ab_autosave', False)
-        self.history = self.reformat_history(config.p.get('ab_history', []))
+        self.autosave = config.p.get("ab_autosave", False)
+        self.history = self.reformat_history(config.p.get("ab_history", []))
         self.load_project(project)
         self.load_database(database)
         self.load_activity(activity)
@@ -135,26 +152,26 @@ class ActivityBrowser(cmd.Cmd):
         """Go to option ``opt``"""
         try:
             index = int(opt)
-            if index >= len(self.current_options.get('formatted', [])):
+            if index >= len(self.current_options.get("formatted", [])):
                 print("There aren't this many options")
-            elif self.current_options['type'] == 'methods':
-                self.choose_method(self.current_options['options'][index])
+            elif self.current_options["type"] == "methods":
+                self.choose_method(self.current_options["options"][index])
 
-            elif self.current_options['type'] == 'categories':
-                self.choose_category(self.current_options['options'][index])
+            elif self.current_options["type"] == "categories":
+                self.choose_category(self.current_options["options"][index])
 
-            elif self.current_options['type'] == 'subcategories':
-                self.choose_subcategory(self.current_options['options'][index])
+            elif self.current_options["type"] == "subcategories":
+                self.choose_subcategory(self.current_options["options"][index])
 
-            elif self.current_options['type'] == 'projects':
-                self.choose_project(self.current_options['options'][index])
+            elif self.current_options["type"] == "projects":
+                self.choose_project(self.current_options["options"][index])
 
-            elif self.current_options['type'] == 'databases':
-                self.choose_database(self.current_options['options'][index])
-            elif self.current_options['type'] == 'activities':
-                self.choose_activity(self.current_options['options'][index])
-            elif self.current_options['type'] == 'history':
-                option = self.current_options['options'][index]
+            elif self.current_options["type"] == "databases":
+                self.choose_database(self.current_options["options"][index])
+            elif self.current_options["type"] == "activities":
+                self.choose_activity(self.current_options["options"][index])
+            elif self.current_options["type"] == "history":
+                option = self.current_options["options"][index]
                 if option[0] == "database":
                     self.choose_database(option[1])
                 elif option[0] == "activity":
@@ -162,45 +179,42 @@ class ActivityBrowser(cmd.Cmd):
             else:
                 # No current options.
                 print("No current options to choose from")
-        except:
+        except Exception:
             print(traceback.format_exc())
-            print("Can't convert %(o)s to number.\nCurrent options are:" % {'o': opt})
+            print("Can't convert %(o)s to number.\nCurrent options are:" % {"o": opt})
             self.print_current_options()
 
     def print_current_options(self, label=None):
         print("")
         if label:
             print(label + "\n")
-        if not self.current_options.get('formatted', []):
+        if not self.current_options.get("formatted", []):
             print("Empty list")
         elif self.max_page:
             # Paging needed
             begin = self.page * self.page_size
             end = (self.page + 1) * self.page_size
-            for index, obj in enumerate(self.current_options['formatted'][begin: end]):
-                print("[%(index)i]: %(option)s" % \
-                    {'option': obj, 'index': index + begin}
+            for index, obj in enumerate(self.current_options["formatted"][begin:end]):
+                print(
+                    "[%(index)i]: %(option)s" % {"option": obj, "index": index + begin}
                 )
-            print("\nPage %(page)i of %(maxp)s. Use n (next page) and p (previous page) to navigate." % {
-                'page': self.page,
-                'maxp': self.max_page
-            })
+            print(
+                "\nPage %(page)i of %(maxp)s. Use n (next page) and p \
+(previous page) to navigate."
+                % {"page": self.page, "maxp": self.max_page}
+            )
         else:
-            for index, obj in enumerate(self.current_options['formatted']):
-                print("[%(index)i]: %(option)s" % \
-                    {'option': obj, 'index': index}
-                )
+            for index, obj in enumerate(self.current_options["formatted"]):
+                print("[%(index)i]: %(option)s" % {"option": obj, "index": index})
         print("")
 
     def set_current_options(self, options):
         self.page = 0
-        if options == None:
-            options = {'type': None}
+        if options is None:
+            options = {"type": None}
             self.max_page = 0
         else:
-            self.max_page = int(math.ceil(
-                len(options['formatted']) / self.page_size
-            ))
+            self.max_page = int(math.ceil(len(options["formatted"]) / self.page_size))
         self.current_options = options
 
     ####################
@@ -214,42 +228,38 @@ class ActivityBrowser(cmd.Cmd):
         if self.activity:
             allowed_length = 76 - 8 - len(self.database)
             activity_ = get_activity(self.activity)
-            name = activity_.get('name', "Unknown")
-            categories = activity_.get('categories',[])
+            name = activity_.get("name", "Unknown")
+            categories = activity_.get("categories", [])
             if allowed_length < len(name):
                 name = name[:allowed_length]
             self.prompt = "%(pj)s@(%(db)s) %(n)s %(categories)s" % {
-                'pj': self.project,
-                'db': self.database,
-                'n': name,
-                'categories': categories
+                "pj": self.project,
+                "db": self.database,
+                "n": name,
+                "categories": categories,
             }
         elif self.database:
             self.prompt = "%(pj)s@(%(name)s) " % {
-                'pj': self.project,
-                'name': self.database
+                "pj": self.project,
+                "name": self.database,
             }
         elif self.project:
-            self.prompt = "%(pj)s " % {
-                'pj': self.project
-            }
+            self.prompt = "%(pj)s " % {"pj": self.project}
         if self.method:
             if self.category:
                 if self.subcategory:
                     self.prompt += "[%(method)s/%(category)s/%(subcategory)s] " % {
-                            'method': self.method,
-                            'category': self.category,
-                            'subcategory': self.subcategory
-                            }
+                        "method": self.method,
+                        "category": self.category,
+                        "subcategory": self.subcategory,
+                    }
                 else:
                     self.prompt += "[%(method)s/%(category)s] " % {
-                            'method': self.method,
-                            'category': self.category
-                            }
+                        "method": self.method,
+                        "category": self.category,
+                    }
             else:
-                self.prompt += "[%(method)s/] " % {
-                        'method': self.method,
-                        }
+                self.prompt += "[%(method)s/] " % {"method": self.method}
         self.prompt += self.invite
 
     ##############
@@ -258,44 +268,45 @@ class ActivityBrowser(cmd.Cmd):
 
     def format_activity(self, key, max_length=10000):
         ds = get_activity(key)
-        kurtz = {
-            'location': ds.get('location', ''),
-            'name': ds.get('name', "Unknown"),
-        }
-        if max_length < len(kurtz['name']):
-            max_length -= (len(kurtz['location']) + 6)
-            kurtz['name'] = kurtz['name'][:max_length] + "..."
+        kurtz = {"location": ds.get("location", ""), "name": ds.get("name", "Unknown")}
+        if max_length < len(kurtz["name"]):
+            max_length -= len(kurtz["location"]) + 6
+            kurtz["name"] = kurtz["name"][:max_length] + "..."
         # TODO: Can adjust string lengths with product name, but just ignore for now
-        product = ds.get(u'reference product', '')
-        categories = ds.get(u'categories', '')
+        product = ds.get("reference product", "")
+        categories = ds.get("categories", "")
         if product:
-            product += u', ' % {}
-        kurtz['product'] = product
-        kurtz['categories'] = categories
+            product += ", " % {}
+        kurtz["product"] = product
+        kurtz["categories"] = categories
         return "%(name)s (%(product)s%(location)s%(categories)s)" % kurtz
 
     def format_defaults(self):
         text = """The current data directory is %(dd)s.
-Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
-            'autosave': get_autosave_text(config.p.get('ab_autosave', False))}
-        if config.p.get('ab_database', None):
-            text += "\nDefault database: %(db)s." % \
-                {'db': config.p['ab_database']}
-        if config.p.get('ab_activity', None):
-            text += "\nDefault activity: %s" % self.format_activity(config.p['ab_activity'])
+Autosave is turned %(autosave)s.""" % {
+            "dd": projects.dir,
+            "autosave": get_autosave_text(config.p.get("ab_autosave", False)),
+        }
+        if config.p.get("ab_database", None):
+            text += "\nDefault database: %(db)s." % {"db": config.p["ab_database"]}
+        if config.p.get("ab_activity", None):
+            text += "\nDefault activity: %s" % self.format_activity(
+                config.p["ab_activity"]
+            )
         return text
 
     def format_history(self, command):
         kind, obj = command
-        if kind == 'database':
-            return "Db: %(name)s" % {'name': obj}
+        if kind == "database":
+            return "Db: %(name)s" % {"name": obj}
         else:
-            return "Act: %(act)s" % {'act': self.format_activity(obj)}
+            return "Act: %(act)s" % {"act": self.format_activity(obj)}
 
     def reformat_history(self, json_data):
         """Convert lists to tuples (from JSON serialization)"""
-        return [(x[0], tuple(x[1])) if x[0] == 'activity' else tuple(x)
-            for x in json_data]
+        return [
+            (x[0], tuple(x[1])) if x[0] == "activity" else tuple(x) for x in json_data
+        ]
 
     def print_cfs(self, current_methods, activity=None):
         """Print cfs for a list of methods, and optionally only for an activity"""
@@ -307,9 +318,14 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
                 cfs = [cf for cf in cfs if cf[0] == activity]
             for cf in cfs:
                 activity_ = get_activity(cf[0])
-                line =[activity_.get('name','Unknown'),
-                        activity_.get('categories',[]), m[1], m[2], cf[1],
-                        method_.metadata['unit']]
+                line = [
+                    activity_.get("name", "Unknown"),
+                    activity_.get("categories", []),
+                    m[1],
+                    m[2],
+                    cf[1],
+                    method_.metadata["unit"],
+                ]
                 table_lines.append(line)
         if table_lines:
             print("CFS")
@@ -326,43 +342,40 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             return
         self.project = project
         projects.set_current(self.project, writable=False)
-        self.history.append(('project', project))
+        self.history.append(("project", project))
         if self.autosave:
-            config.p['ab_project'] = self.project
-            config.p['ab_history'] = self.history[-10:]
+            config.p["ab_project"] = self.project
+            config.p["ab_history"] = self.history[-10:]
             config.save_preferences()
         self.set_current_options(None)
-        self.activity=None
-        self.database=None
+        self.activity = None
+        self.database = None
         self.list_databases()
         self.update_prompt()
 
     def load_project(self, project):
         if project:
             if project not in projects:
-                print("Project %(name)s not found" % \
-                        {'name': project})
-                load_project(None)
+                print("Project %(name)s not found" % {"name": project})
+                self.load_project(None)
             else:
                 self.project = project
                 projects.set_current(self.project, writable=False)
-        elif config.p.get('ab_project', False):
-            self.project = config.p['ab_project']
+        elif config.p.get("ab_project", False):
+            self.project = config.p["ab_project"]
         else:
-            self.project= None
+            self.project = None
             self.list_projects()
 
     def list_projects(self):
         pjs = [p.name for p in projects]
-        self.set_current_options({
-            'type':'projects',
-            'options':pjs,
-            'formatted': [
-                "%(name)s" % {
-                    'name': name
-                }
-            for name in pjs]
-        })
+        self.set_current_options(
+            {
+                "type": "projects",
+                "options": pjs,
+                "formatted": ["%(name)s" % {"name": name} for name in pjs],
+            }
+        )
         self.print_current_options("Projects")
 
     #######################
@@ -372,16 +385,16 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def choose_database(self, database):
         if self.activity and self.activity[0] == database:
             pass
-        elif config.p.get('ab_activity', [0, 0])[0] == database:
-            self.choose_activity(config.p['ab_activity'])
+        elif config.p.get("ab_activity", [0, 0])[0] == database:
+            self.choose_activity(config.p["ab_activity"])
         else:
             self.unknown_activity()
 
         self.database = database
-        self.history.append(('database', database))
+        self.history.append(("database", database))
         if self.autosave:
-            config.p['ab_database'] = self.database
-            config.p['ab_history'] = self.history[-10:]
+            config.p["ab_database"] = self.database
+            config.p["ab_history"] = self.history[-10:]
             config.save_preferences()
         self.set_current_options(None)
         self.update_prompt()
@@ -390,28 +403,28 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         """Load database, trying first """
         if database:
             if database not in databases:
-                print("Database %(name)s not found" % \
-                    {'name': database})
+                print("Database %(name)s not found" % {"name": database})
                 self.load_database(None)
             else:
                 self.database = database
-        elif config.p.get('ab_database', False):
-            self.database = config.p['ab_database']
+        elif config.p.get("ab_database", False):
+            self.database = config.p["ab_database"]
         else:
             self.database = None
 
     def list_databases(self):
         dbs = sorted(databases.list)
-        self.set_current_options({
-            'type': 'databases',
-            'options': dbs,
-            'formatted': [
-                "%(name)s (%(number)s activities/flows)" %
-                {
-                    'name': name, 'number': databases[name].get('number', 'unknown')
-                }
-            for name in dbs]
-        })
+        self.set_current_options(
+            {
+                "type": "databases",
+                "options": dbs,
+                "formatted": [
+                    "%(name)s (%(number)s activities/flows)"
+                    % {"name": name, "number": databases[name].get("number", "unknown")}
+                    for name in dbs
+                ],
+            }
+        )
         self.print_current_options("Databases")
 
     #######################
@@ -423,18 +436,18 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         if isinstance(activity, str):
             # Input parameter
             self.choose_activity((self.database, activity))
-        elif config.p.get('ab_activity', None):
-            self.choose_activity(config.p['ab_activity'], restored=True)
+        elif config.p.get("ab_activity", None):
+            self.choose_activity(config.p["ab_activity"], restored=True)
         else:
             self.unknown_activity()
 
     def choose_activity(self, key, restored=False):
         self.database = key[0]
         self.activity = key
-        self.history.append(('activity', key))
+        self.history.append(("activity", key))
         if self.autosave and not restored:
-            config.p['ab_activity'] = key
-            config.p['ab_history'] = self.history[-10:]
+            config.p["ab_activity"] = key
+            config.p["ab_history"] = self.history[-10:]
             config.save_preferences()
         self.set_current_options(None)
         self.update_prompt()
@@ -442,24 +455,30 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def format_exchanges_as_options(self, es, kind, unit_override=None):
         objs = []
         for exc in es:
-            if exc['type'] != kind:
+            if exc["type"] != kind:
                 continue
-            ds = get_activity(exc['input'])
-            objs.append({
-                'name': ds.get('name', "Unknown"),
-                'location': ds.get('location', config.global_location),
-                'unit': unit_override or ds.get('unit', 'unit'),
-                'amount': exc['amount'],
-                'key': exc['input'],
-            })
-        objs.sort(key=lambda x: x['name'])
+            ds = get_activity(exc["input"])
+            objs.append(
+                {
+                    "name": ds.get("name", "Unknown"),
+                    "location": ds.get("location", config.global_location),
+                    "unit": unit_override or ds.get("unit", "unit"),
+                    "amount": exc["amount"],
+                    "key": exc["input"],
+                }
+            )
+        objs.sort(key=lambda x: x["name"])
 
-        self.set_current_options({
-            'type': 'activities',
-            'options': [obj['key'] for obj in objs],
-            'formatted': ["%(amount).3g %(unit)s %(name)s (%(location)s)" \
-                % obj for obj in objs]
-        })
+        self.set_current_options(
+            {
+                "type": "activities",
+                "options": [obj["key"] for obj in objs],
+                "formatted": [
+                    "%(amount).3g %(unit)s %(name)s (%(location)s)" % obj
+                    for obj in objs
+                ],
+            }
+        )
 
     def get_downstream_exchanges(self, activity):
         """Get the exchanges that consume this activity's product"""
@@ -467,15 +486,17 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         excs = []
         exchanges = activity.upstream()
         for exc in exchanges:
-            if activity == exc['input'] and not activity == exc['output']:
-                excs.append({
-                    'type': exc.get('type', 'Unknown'),
-                    'input': exc['output'],
-                    'amount': exc['amount'],
-                    'key': exc['output'][1],
-                    'name': exc.get('name', 'Unknown'),
-                })
-        excs.sort(key=lambda x: x['name'])
+            if activity == exc["input"] and not activity == exc["output"]:
+                excs.append(
+                    {
+                        "type": exc.get("type", "Unknown"),
+                        "input": exc["output"],
+                        "amount": exc["amount"],
+                        "key": exc["output"][1],
+                        "name": exc.get("name", "Unknown"),
+                    }
+                )
+        excs.sort(key=lambda x: x["name"])
         return excs
 
     def unknown_activity(self):
@@ -488,14 +509,13 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def load_method(self, method):
         if method:
             if method not in methods:
-                print("Method %(name)s not found" % \
-                    {'name': method})
+                print("Method %(name)s not found" % {"name": method})
                 self.load_method(None)
             else:
                 self.method = method[0]
                 self.category = method[1]
-        elif config.p.get('ab_method', False):
-            self.method = config.p['ab_method']
+        elif config.p.get("ab_method", False):
+            self.method = config.p["ab_method"]
         else:
             self.method = None
             self.category = None
@@ -508,15 +528,13 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             for m in methods_:
                 m_names.add(m[0])
             m_names = sorted(m_names)
-            self.set_current_options({
-                'type':'methods',
-                'options':list(m_names),
-                'formatted': [
-                    "%(name)s" % {
-                        'name': name
-                    }
-                for name in m_names ]
-            })
+            self.set_current_options(
+                {
+                    "type": "methods",
+                    "options": list(m_names),
+                    "formatted": ["%(name)s" % {"name": name} for name in m_names],
+                }
+            )
             self.print_current_options("Methods")
         else:
             self.set_current_options(None)
@@ -525,58 +543,56 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def choose_method(self, method):
         self.method = method
         self.category = self.subcategory = None
-        self.history.append(('method', method))
+        self.history.append(("method", method))
         if self.autosave:
-            config.p['ab_method'] = self.method
-            config.p['ab_history'] = self.history[-10:]
+            config.p["ab_method"] = self.method
+            config.p["ab_history"] = self.history[-10:]
             config.save_preferences()
         c_names = set([])
         methods_ = sorted(methods)
         for m in [m for m in methods_ if m[0] == method]:
             c_names.add(m[1])
         c_names = sorted(c_names)
-        self.set_current_options({
-            'type':'categories',
-            'options':list(c_names),
-            'formatted': [
-                "%(name)s" % {
-                    'name': name
-                }
-            for name in c_names ]
-        })
+        self.set_current_options(
+            {
+                "type": "categories",
+                "options": list(c_names),
+                "formatted": ["%(name)s" % {"name": name} for name in c_names],
+            }
+        )
         self.print_current_options("Categories")
         self.update_prompt()
 
     def choose_category(self, category):
         self.category = category
-        self.history.append(('category', category))
+        self.history.append(("category", category))
         if self.autosave:
-            config.p['ab_category'] = self.category
-            config.p['ab_history'] = self.history[-10:]
+            config.p["ab_category"] = self.category
+            config.p["ab_history"] = self.history[-10:]
             config.save_preferences()
         c_names = set([])
         methods_ = sorted(methods)
         for m in [m for m in methods_ if m[0] == self.method and m[1] == category]:
             c_names.add(m[2])
-        self.set_current_options({
-            'type':'subcategories',
-            'options':list(c_names),
-            'formatted': [
-                "%(name)s" % {
-                    'name': name
-                }
-            for name in c_names ]
-        })
+        self.set_current_options(
+            {
+                "type": "subcategories",
+                "options": list(c_names),
+                "formatted": ["%(name)s" % {"name": name} for name in c_names],
+            }
+        )
         self.print_current_options("Subcategories")
         self.update_prompt()
 
     def choose_subcategory(self, subcategory):
-       self.subcategory = subcategory
-       self.history.append(('subcategory', subcategory))
-       if self.activity and self.database == 'biosphere3': #TODO: recover generic name instead of hard coded one
-           mkey =(self.method, self.category, self.subcategory)
-           self.print_cfs([mkey], self.activity)
-       self.update_prompt()
+        self.subcategory = subcategory
+        self.history.append(("subcategory", subcategory))
+        if (
+            self.activity and self.database == "biosphere3"
+        ):  # TODO: recover generic name instead of hard coded one
+            mkey = (self.method, self.category, self.subcategory)
+            self.print_cfs([mkey], self.activity)
+        self.update_prompt()
 
     ########################
     # Default user actions #
@@ -584,10 +600,10 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
 
     def default(self, line):
         """No ``do_foo`` command - try to select from options."""
-        if self.current_options['type']:
+        if self.current_options["type"]:
             try:
                 self.choose_option(int(line))
-            except:
+            except Exception:
                 print(next(GRUMPY) + line)
         else:
             print(next(GRUMPY) + line)
@@ -613,9 +629,11 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def do_autosave(self, arg):
         """Toggle autosave behaviour.
 
-        If autosave is on, the current database or activity is written to config.p each time it changes."""
+        If autosave is on, the current database or activity is written to
+        config.p each time it changes.
+        """
         self.autosave = not self.autosave
-        config.p['ab_autosave'] = self.autosave
+        config.p["ab_autosave"] = self.autosave
         config.save_preferences()
         print("Autosave is now %s" % get_autosave_text(self.autosave))
 
@@ -625,21 +643,23 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("Need to choose an activity first")
         else:
             es = get_activity(self.activity).exchanges()
-            self.format_exchanges_as_options(es, 'biosphere')
+            self.format_exchanges_as_options(es, "biosphere")
             self.print_current_options("Biosphere flows")
 
     def do_cfs(self, arg):
         """Print cfs of biosphere flows."""
-        if (self.activity and self.database == 'biosphere3') or self.method:  # show the cfs for the given flow
+        if (
+            self.activity and self.database == "biosphere3"
+        ) or self.method:  # show the cfs for the given flow
             current_methods = [m for m in methods if m[0] == self.method]
             if self.category:  # show cfs for current cat, current act
-                current_methods = [
-                    m for m in current_methods if m[1] == self.category]
+                current_methods = [m for m in current_methods if m[1] == self.category]
                 if self.subcategory:
                     current_methods = [
-                        m for m in current_methods if m[2] == self.subcategory]
+                        m for m in current_methods if m[2] == self.subcategory
+                    ]
         else:
-            print("No method currently selected")#Alternative: cfs for all methods?
+            print("No method currently selected")  # Alternative: cfs for all methods?
             return False
         self.print_cfs(current_methods, self.activity)
         self.update_prompt()
@@ -647,13 +667,13 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def do_cp(self, arg):
         """Clear preferences. Only for development."""
         self.autosave = False
-        if config.p['ab_autosave']:
-            del config.p['ab_autosave']
-        del config.p['ab_project']
-        del config.p['ab_method']
-        del config.p['ab_database']
-        del config.p['ab_activity']
-        del config.p['ab_history']
+        if config.p["ab_autosave"]:
+            del config.p["ab_autosave"]
+        del config.p["ab_project"]
+        del config.p["ab_method"]
+        del config.p["ab_database"]
+        del config.p["ab_activity"]
+        del config.p["ab_history"]
         config.save_preferences()
         self.project = self.database = self.activity = None
         self.method = self.category = self.subcategory = None
@@ -665,7 +685,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("Need to choose an activity first")
         else:
             ds = get_activity(self.activity)
-            unit = ds.get('unit', '')
+            unit = ds.get("unit", "")
             excs = self.get_downstream_exchanges(self.activity)
             self.format_exchanges_as_options(excs, 7, unit)
             self.print_current_options("Downstream consumers")
@@ -674,17 +694,19 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
         """Switch to a different database"""
         print(arg)
         if arg not in databases:
-            print("'%(db)s' not a valid database" % {'db': arg})
+            print("'%(db)s' not a valid database" % {"db": arg})
         else:
             self.choose_database(arg)
 
     def do_h(self, arg):
         """Pretty print history of databases & activities"""
-        self.set_current_options({
-            'type': 'history',
-            'options': self.history[::-1],
-            'formatted': [self.format_history(o) for o in self.history[::-1]]
-        })
+        self.set_current_options(
+            {
+                "type": "history",
+                "options": self.history[::-1],
+                "formatted": [self.format_history(o) for o in self.history[::-1]],
+            }
+        )
         self.print_current_options("Browser history")
 
     def do_help(self, args):
@@ -698,14 +720,15 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("No current activity")
         else:
             ds = get_activity(self.activity)
-            prod = [x for x in ds.exchanges() if x['input'] == self.activity]
-            if u'production amount' in ds and ds[u'production amount']:
-                amount = ds[u'production amount']
+            prod = [x for x in ds.exchanges() if x["input"] == self.activity]
+            if "production amount" in ds and ds["production amount"]:
+                amount = ds["production amount"]
             elif len(prod) == 1:
-                amount = prod[0]['amount']
+                amount = prod[0]["amount"]
             else:
-                amount = 1.
-            print("""\n%(name)s
+                amount = 1.0
+            print(
+                """\n%(name)s
 
     Database: %(database)s
     ID: %(id)s
@@ -716,21 +739,23 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     Categories: %(categories)s
     Technosphere inputs: %(tech)s
     Biosphere flows: %(bio)s
-    Reference flow used by: %(consumers)s\n""" % {
-                'name': ds.get('name', "Unknown"),
-                'product': ds.get(u'reference product') or ds.get('name', "Unknown"),
-                'database': self.activity[0],
-                'id': self.activity[1],
-                'amount': amount,
-                'unit': ds.get('unit', ''),
-                'categories': ', '.join(ds.get('categories', [])),
-                'location': ds.get('location', config.global_location),
-                'tech': len([x for x in ds.exchanges()
-                    if x['type'] == 'technosphere']),
-                'bio': len([x for x in ds.exchanges()
-                    if x['type'] == 'biosphere']),
-                'consumers': len(self.get_downstream_exchanges(self.activity)),
-            })
+    Reference flow used by: %(consumers)s\n"""
+                % {
+                    "name": ds.get("name", "Unknown"),
+                    "product": ds.get("reference product") or ds.get("name", "Unknown"),
+                    "database": self.activity[0],
+                    "id": self.activity[1],
+                    "amount": amount,
+                    "unit": ds.get("unit", ""),
+                    "categories": ", ".join(ds.get("categories", [])),
+                    "location": ds.get("location", config.global_location),
+                    "tech": len(
+                        [x for x in ds.exchanges() if x["type"] == "technosphere"]
+                    ),
+                    "bio": len([x for x in ds.exchanges() if x["type"] == "biosphere"]),
+                    "consumers": len(self.get_downstream_exchanges(self.activity)),
+                }
+            )
 
     def do_ii(self, arg):
         """Extended Info on current activity.
@@ -740,14 +765,15 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("No current activity")
         else:
             ds = get_activity(self.activity)
-            prod = [x for x in ds.exchanges() if x['input'] == self.activity]
-            if u'production amount' in ds and ds[u'production amount']:
-                amount = ds[u'production amount']
+            prod = [x for x in ds.exchanges() if x["input"] == self.activity]
+            if "production amount" in ds and ds["production amount"]:
+                amount = ds["production amount"]
             elif len(prod) == 1:
-                amount = prod[0]['amount']
+                amount = prod[0]["amount"]
             else:
-                amount = 1.
-            print("""Extended info \n%(name)s
+                amount = 1.0
+            print(
+                """Extended info \n%(name)s
 
     Database: %(database)s
     ID: %(id)s
@@ -758,36 +784,49 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     Categories: %(categories)s
     Technosphere inputs: %(tech)s
     Biosphere flows: %(bio)s
-    Reference flow used by: %(consumers)s\n""" % {
-                'name': ds.get('name', "Unknown"),
-                'product': ds.get(u'reference product') or ds.get('name', "Unknown"),
-                'database': self.activity[0],
-                'id': self.activity[1],
-                'amount': amount,
-                'unit': ds.get('unit', ''),
-                'categories': ', '.join(ds.get('categories', [])),
-                'location': ds.get('location', config.global_location),
-                'tech': len([x for x in ds.exchanges()
-                    if x['type'] == 'technosphere']),
-                'bio': len([x for x in ds.exchanges()
-                    if x['type'] == 'biosphere']),
-                'consumers': len(self.get_downstream_exchanges(self.activity)),
-            })
-            indentation_char = ' ' * 4
+    Reference flow used by: %(consumers)s\n"""
+                % {
+                    "name": ds.get("name", "Unknown"),
+                    "product": ds.get("reference product") or ds.get("name", "Unknown"),
+                    "database": self.activity[0],
+                    "id": self.activity[1],
+                    "amount": amount,
+                    "unit": ds.get("unit", ""),
+                    "categories": ", ".join(ds.get("categories", [])),
+                    "location": ds.get("location", config.global_location),
+                    "tech": len(
+                        [x for x in ds.exchanges() if x["type"] == "technosphere"]
+                    ),
+                    "bio": len([x for x in ds.exchanges() if x["type"] == "biosphere"]),
+                    "consumers": len(self.get_downstream_exchanges(self.activity)),
+                }
+            )
+            indentation_char = " " * 4
             line_length = 50  # TODO: use dynamic line lenght or take from prefs
-            for field in [k for k in ds.keys() if k not in ["name", "product",
-                                                            "database", "location", "unit", "categories",
-                                                            "production amount", "code"]]:
+            for field in [
+                k
+                for k in ds.keys()
+                if k
+                not in [
+                    "name",
+                    "product",
+                    "database",
+                    "location",
+                    "unit",
+                    "categories",
+                    "production amount",
+                    "code",
+                ]
+            ]:
 
                 field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
-                print("%(tab)s%(field)s:" % {'tab': indentation_char, 'field': field})
+                print("%(tab)s%(field)s:" % {"tab": indentation_char, "field": field})
                 for l in field_contents:
-                    print("%(tab)s%(l)s" % {'tab': indentation_char * 2, 'l': l})
-
+                    print("%(tab)s%(l)s" % {"tab": indentation_char * 2, "l": l})
 
     def do_l(self, arg):
         """List current options"""
-        if self.current_options['type']:
+        if self.current_options["type"]:
             self.print_current_options()
         else:
             print("No current options")
@@ -807,15 +846,15 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
     def do_mi(self, arg):
         """Show method information"""
         if self.method and self.category and self.subcategory:
-           m = Method((self.method, self.category, self.subcategory))
-           pp = pprint.PrettyPrinter(indent=4)
-           pp.pprint(m.metadata)
+            m = Method((self.method, self.category, self.subcategory))
+            pp = pprint.PrettyPrinter(indent=4)
+            pp.pprint(m.metadata)
         else:
             print("No current method selected")
 
     def do_n(self, arg):
         """Go to next page in paged options"""
-        if not self.current_options['type']:
+        if not self.current_options["type"]:
             print("Not in page mode")
         elif self.page == self.max_page:
             print("No next page")
@@ -825,7 +864,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
 
     def do_p(self, arg):
         """Go to previous page in paged options"""
-        if not self.current_options['type']:
+        if not self.current_options["type"]:
             print("Not in page mode")
         elif arg:
             try:
@@ -835,8 +874,8 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
                 else:
                     self.page = page
                     self.print_current_options()
-            except:
-                print("Can't convert page number %(page)s" % {'page': arg})
+            except Exception:
+                print("Can't convert page number %(page)s" % {"page": arg})
         elif self.page == 0:
             print("Already page 0")
         else:
@@ -861,21 +900,44 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
 
     def do_s(self, arg):
         """Search activity names."""
-        if not self.database:
-            print("Please choose a database first")
-        elif not arg:
-            print("Must provide search string" % {})
+        re1a = r"(-loc\s)"  # Any Single Character 1
+        re1b = r"(\{.*\})"  # Curly Braces 1
+        re2 = r"\s(.+)"
+        rg = re.compile(re1a + re1b + re2, re.IGNORECASE | re.DOTALL)
+        m = rg.search(arg)
+        needle = arg  # Find the needle in the haystack
+        if m is None and "-loc" in arg:
+            print("Missing location in curly braces in command: -loc {MX} ...")
+            return
+        elif m:
+            c2 = m.group(2)
+            location = c2.strip("{}")
+            needle = m.group(3)
+            print("Filtering for location {} after search".format(location))
+
+        if m:
+            specials = [" ", "/", "-", "&"]
+            if not any(special in location for special in specials):  # complex location
+                criteria = {"location": location}
+                results = Database(self.database).search(
+                    needle, filter=criteria, limit=self.search_limit
+                )
+            else:
+                results = Database(self.database).search(needle, limit=None)
+                results = [
+                    r for r in results if r["location"].lower() == location.lower()
+                ]
         else:
-            results = Database(self.database).search(arg)
-            results_keys = [r.key for r in results]
-            self.set_current_options({
-                'type': 'activities',
-                'options': results_keys,
-                'formatted': [self.format_activity(key) for key in results]
-                })
-            self.print_current_options(
-                "Search results for %(query)s" % {'query': arg}
-            )
+            results = Database(self.database).search(needle, limit=self.search_limit)
+        results_keys = [r.key for r in results]
+        self.set_current_options(
+            {
+                "type": "activities",
+                "options": results_keys,
+                "formatted": [self.format_activity(key) for key in results],
+            }
+        )
+        self.print_current_options("Search results for %(query)s" % {"query": needle})
 
     def do_u(self, arg):
         """List upstream processes"""
@@ -883,7 +945,7 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("Need to choose an activity first")
         else:
             es = get_activity(self.activity).technosphere()
-            self.format_exchanges_as_options(es, 'technosphere')
+            self.format_exchanges_as_options(es, "technosphere")
             self.print_current_options("Upstream inputs")
 
     def do_web(self, arg):
@@ -892,27 +954,23 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             print("No current activity" % {})
         else:
             url = "http://127.0.0.1:5000/view/%(db)s/%(key)s" % {
-                'db': self.database,
-                'key': self.activity[1]
+                "db": self.database,
+                "key": self.activity[1],
             }
-            threading.Timer(
-                0.1,
-                lambda: webbrowser.open_new_tab(url)
-            ).start()
+            threading.Timer(0.1, lambda: webbrowser.open_new_tab(url)).start()
 
     def do_wh(self, arg):
         output_dir = projects.request_directory("export")
         fp = os.path.join(output_dir, "browser history.%s.txt" % time.ctime())
-        with codecs.open(fp, "w", encoding='utf-8') as f:
+        with codecs.open(fp, "w", encoding="utf-8") as f:
             for line in self.history:
-                f.write(unicode(line) + "\n")
-        print("History exported to %(fp)s" % {'fp': fp})
+                f.write(line + "\n")
+        print("History exported to %(fp)s" % {"fp": fp})
 
     def do_G(self, arg):
         """Do an LCIA of the selected activity + method[s] """
         if self.activity and self.method:
-            activity_ = get_activity(self.activity)
-            method_key_list=[]
+            method_key_list = []
 
             if self.method and self.category and self.subcategory:
                 method_id = (self.method, self.category, self.subcategory)
@@ -925,19 +983,26 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
                 for m in methods:
                     if m[0] == self.method:
                         method_key_list.append(m)
-            bw2browser_cs = {'inv': [{self.activity:1}], 'ia': method_key_list}
+            bw2browser_cs = {"inv": [{self.activity: 1}], "ia": method_key_list}
             tmp_cs_id = uuid.uuid1()
             calculation_setups[str(tmp_cs_id)] = bw2browser_cs
             mlca = MultiLCA(str(tmp_cs_id))
             formatted_res = [
-                    [mlca.methods[i][0],
+                [
+                    mlca.methods[i][0],
                     mlca.methods[i][1],
                     mlca.methods[i][2],
-                        Method(mlca.methods[i]).metadata['unit'],
-                        score.pop()] for i,score in enumerate(mlca.results.T.tolist())
-                    ]
-            print(tabulate(formatted_res,
-                headers=['method', 'category', 'subcategory', 'unit', 'score']))
+                    Method(mlca.methods[i]).metadata["unit"],
+                    score.pop(),
+                ]
+                for i, score in enumerate(mlca.results.T.tolist())
+            ]
+            print(
+                tabulate(
+                    formatted_res,
+                    headers=["method", "category", "subcategory", "unit", "score"],
+                )
+            )
         else:
             print("Select at least a method first")
 
@@ -949,31 +1014,33 @@ Autosave is turned %(autosave)s.""" % {'dd': projects.dir,
             db = Database(self.database)
             activities = [activity for activity in db]
             # Sort activities by name
-            if arg and isinstance(arg, str) and arg.lower() == 'name':
-                activities.sort(key= lambda a: a.get('name'))
-            activity_keys = [(self.database, activity['code'])
-                             for activity in activities]
-            formatted_activities = [self.format_activity(key) for key in
-                                    activity_keys]
-            self.set_current_options({
-                'type': 'activities',
-                'options': activity_keys,
-                'formatted': formatted_activities
-                })
+            if arg and isinstance(arg, str) and arg.lower() == "name":
+                activities.sort(key=lambda a: a.get("name"))
+            activity_keys = [
+                (self.database, activity["code"]) for activity in activities
+            ]
+            formatted_activities = [self.format_activity(key) for key in activity_keys]
+            self.set_current_options(
+                {
+                    "type": "activities",
+                    "options": activity_keys,
+                    "formatted": formatted_activities,
+                }
+            )
 
             self.print_current_options("Activities in database")
 
 
 def main():
-    arguments = docopt(__doc__, version='Brightway2 Activity Browser 2.0')
+    arguments = docopt(__doc__, version="Brightway2 Activity Browser 2.0")
     activitybrowser = ActivityBrowser()
     activitybrowser._init(
-        project=arguments['<project>'],
-        database=arguments['<database>'],
-        activity=arguments['<activity-id>']
+        project=arguments["<project>"],
+        database=arguments["<database>"],
+        activity=arguments["<activity-id>"],
     )
     activitybrowser.cmdloop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
