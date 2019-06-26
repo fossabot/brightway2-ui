@@ -687,7 +687,7 @@ Autosave is turned %(autosave)s.""" % {
             ds = get_activity(self.activity)
             unit = ds.get("unit", "")
             excs = self.get_downstream_exchanges(self.activity)
-            self.format_exchanges_as_options(excs, 7, unit)
+            self.format_exchanges_as_options(excs, "technosphere", unit)
             self.print_current_options("Downstream consumers")
 
     def do_db(self, arg):
@@ -736,7 +736,8 @@ Autosave is turned %(autosave)s.""" % {
     Production amount: %(amount).2g %(unit)s
 
     Location: %(location)s
-    Categories: %(categories)s
+    Classifications:
+                        %(classifications)s
     Technosphere inputs: %(tech)s
     Biosphere flows: %(bio)s
     Reference flow used by: %(consumers)s\n"""
@@ -747,7 +748,12 @@ Autosave is turned %(autosave)s.""" % {
                     "id": self.activity[1],
                     "amount": amount,
                     "unit": ds.get("unit", ""),
-                    "categories": ", ".join(ds.get("categories", [])),
+                    "classifications": "\n\t\t\t".join(
+                        [
+                            "{}: {}".format(c[0], c[1])
+                            for c in ds.get("classifications", [])
+                        ]
+                    ),
                     "location": ds.get("location", config.global_location),
                     "tech": len(
                         [x for x in ds.exchanges() if x["type"] == "technosphere"]
@@ -781,7 +787,8 @@ Autosave is turned %(autosave)s.""" % {
     Production amount: %(amount).2g %(unit)s
 
     Location: %(location)s
-    Categories: %(categories)s
+    Classifications:
+                        %(classifications)s
     Technosphere inputs: %(tech)s
     Biosphere flows: %(bio)s
     Reference flow used by: %(consumers)s\n"""
@@ -792,7 +799,12 @@ Autosave is turned %(autosave)s.""" % {
                     "id": self.activity[1],
                     "amount": amount,
                     "unit": ds.get("unit", ""),
-                    "categories": ", ".join(ds.get("categories", [])),
+                    "classifications": "\n\t\t\t".join(
+                        [
+                            "{}: {}".format(c[0], c[1])
+                            for c in ds.get("classifications", [])
+                        ]
+                    ),
                     "location": ds.get("location", config.global_location),
                     "tech": len(
                         [x for x in ds.exchanges() if x["type"] == "technosphere"]
@@ -813,7 +825,7 @@ Autosave is turned %(autosave)s.""" % {
                     "database",
                     "location",
                     "unit",
-                    "categories",
+                    "classifications",
                     "production amount",
                     "code",
                 ]

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0] - 2019-06-26
+
+### Changed
+
++ Fixed listing of downstream consumers
++ Fixed listing of classifications instead of categories
+
 ## [0.21.0] - 2019-06-25
 
 ### Added
