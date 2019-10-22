@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.23.0] - 2019-07-15
+
+### Added
+
++ Top emissions and Top activities commands
+
+### Changed
+
 ## [0.22.0] - 2019-06-26
 
 ### Changed

@@ -134,5 +134,9 @@ venv.bak/
 
 # End of https://www.gitignore.io/api/python
 
+# Ignore pycharm
+
+.idea/
+
 # From the mercurial phase of the project:
 bw2ui/web/static/*

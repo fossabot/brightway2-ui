@@ -109,6 +109,8 @@ by name.
     b: List biosphere flows for the current activity.
     cfs: Show characterization factors for current activity and current method.
     G: if a method and activity are selected, do an lcia of the activity.
+    ta: if an lcia of the activity has been done, list top activities.
+    te: if an lcia of the activity has been done, list top emissions.
 
 Working with methods:
     lm: List methods.
@@ -1017,6 +1019,45 @@ Autosave is turned %(autosave)s.""" % {
             )
         else:
             print("Select at least a method first")
+
+    def do_ta(self, arg):
+        if self.activity:
+            if self.method and self.category and self.subcategory:
+                a = get_activity(self.activity)
+                lca = a.lca((self.method, self.category, self.subcategory))
+                top_a = lca.top_activities()
+                print(
+                        tabulate(top_a,
+                            headers=["score", "supply", "Activity"]
+                            )
+                        )
+
+            else:
+                print("Select at least a method first")
+
+        else:
+            print("Select an activity ")
+
+    def do_te(self, arg):
+        if self.activity:
+            if self.method and self.category and self.subcategory:
+                a = get_activity(self.activity)
+                lca = a.lca((self.method, self.category, self.subcategory))
+                top_a = lca.top_emissions()
+
+                print(
+                        tabulate(top_a,
+                            headers=["score", "supply", "Activity"]
+                            )
+                        )
+
+            else:
+                print("Select at least a method first")
+
+        else:
+            print("Select an activity ")
+
+
 
     def do_aa(self, arg):
         """List all activities in the current database. """
