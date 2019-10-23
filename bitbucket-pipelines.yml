@@ -5,7 +5,7 @@ pipelines:
           master:
             - step:
                 script: 
-                  - conda install -y -q --freeze-installed conda-build anaconda-client
+                  - conda install -y -q conda-build anaconda-client
                   - cd conda.recipe
                   - anaconda login --username $ANACONDA_USER --password $ANACONDA_PASSWORD
                   - conda config --set anaconda_upload yes
