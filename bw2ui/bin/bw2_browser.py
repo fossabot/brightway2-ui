@@ -454,7 +454,7 @@ Autosave is turned %(autosave)s.""" % {
         self.set_current_options(None)
         self.update_prompt()
 
-    def format_exchanges_as_options(self, es, kind, unit_override=None):
+    def format_exchanges_as_options(self, es, kind, unit_override=None, extended=False):
         objs = []
         for exc in es:
             if exc["type"] != kind:
@@ -466,19 +466,21 @@ Autosave is turned %(autosave)s.""" % {
                     "location": ds.get("location", config.global_location),
                     "unit": unit_override or ds.get("unit", "unit"),
                     "amount": exc["amount"],
+                    "formula": exc.get("formula", None),
                     "key": exc["input"],
                 }
             )
         objs.sort(key=lambda x: x["name"])
+        if extended:
+            format_string = "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"  # NOQA: E501
+        else:
+            format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)"
 
         self.set_current_options(
             {
                 "type": "activities",
                 "options": [obj["key"] for obj in objs],
-                "formatted": [
-                    "%(amount).3g %(unit)s %(name)s (%(location)s)" % obj
-                    for obj in objs
-                ],
+                "formatted": [format_string % obj for obj in objs],
             }
         )
 
@@ -962,6 +964,15 @@ Autosave is turned %(autosave)s.""" % {
             self.format_exchanges_as_options(es, "technosphere")
             self.print_current_options("Upstream inputs")
 
+    def do_uu(self, arg):
+        """List upstream processes extra info (formulas)"""
+        if not self.activity:
+            print("Need to choose an activity first")
+        else:
+            es = get_activity(self.activity).technosphere()
+            self.format_exchanges_as_options(es, "technosphere", extended=True)
+            self.print_current_options("Upstream inputs")
+
     def do_web(self, arg):
         """Open a web browser to current activity"""
         if not self.activity:
@@ -1026,11 +1037,7 @@ Autosave is turned %(autosave)s.""" % {
                 a = get_activity(self.activity)
                 lca = a.lca((self.method, self.category, self.subcategory))
                 top_a = lca.top_activities()
-                print(
-                        tabulate(top_a,
-                            headers=["score", "supply", "Activity"]
-                            )
-                        )
+                print(tabulate(top_a, headers=["score", "supply", "Activity"]))
 
             else:
                 print("Select at least a method first")
@@ -1045,19 +1052,13 @@ Autosave is turned %(autosave)s.""" % {
                 lca = a.lca((self.method, self.category, self.subcategory))
                 top_a = lca.top_emissions()
 
-                print(
-                        tabulate(top_a,
-                            headers=["score", "supply", "Activity"]
-                            )
-                        )
+                print(tabulate(top_a, headers=["score", "supply", "Activity"]))
 
             else:
                 print("Select at least a method first")
 
         else:
             print("Select an activity ")
-
-
 
     def do_aa(self, arg):
         """List all activities in the current database. """

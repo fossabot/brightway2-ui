@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.24.0] - 2020-01-30
+
+### Added
+
++ Show formulas for parameterized exchanges
+
 ## [0.23.0] - 2019-07-15
 
 ### Added
@@ -44,3 +50,48 @@ specials = [' ', '/', '-', '&']
 ### Added
 
 + `G` command will do an LCIA if an activity and method(s) are selected
+
+
+
+0.18.2 (2015-03-08)
+===================
+
+Fix `issue #6 <https://bitbucket.org/cmutel/brightway2-ui/issue/6/bw2-controller-typeerror-safe_colorama>`__
+
+0.18.1 (2014-09-03)
+===================
+
+Bugfix for database health check template.
+
+0.18 (2014-09-03)
+=================
+
+- FEATURE: Add database facet views, e.g. by location or unit.
+- Updated jquery and background javascript libraries.
+
+0.17 (2014-08-30)
+=================
+
+- FEATURE: Add database health check. Requires ``bw2analyzer`` >= 0.6.
+- FEATURE: Add Whoosh-based searching using ``bw2search``.
+
+0.16 (2014-08-26)
+=================
+
+- FEATURE: New supply chain visualization in activity browser.
+
+0.15 (2014-07-30)
+=================
+
+Updated dependencies.
+
+0.14 (2014-06-14)
+=================
+
+- CHANGE: Using `entry_points` instead of `scripts` in setup.py allows scripts that are exectuable in Windows. New names are `bw-web` (instead of `bw2-web.py`), `bw2-controller`, and `bw2-browser`.
+
+0.13 (2014-06-13)
+=================
+
+- CHANGE: Change bw2ui.web.app to web_app to avoid naming conflicts
+- CHANGE: Remove some assumptions about Database and Method metadata
