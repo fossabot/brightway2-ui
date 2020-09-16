@@ -4,6 +4,7 @@
 
 ### Added
 
++ The package is architecture independant, but requires conda > 4.3 to be installed
 + Commands to list and search parameters
 
 ## [0.24.0] - 2020-01-30

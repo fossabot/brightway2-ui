@@ -10,7 +10,7 @@ requirements:
                 - python
                 - setuptools
         run:
-                - python
+                - python >=3.6
                 - brightway2 >2.1.1
                 - docopt
                 - eight
@@ -29,3 +29,5 @@ build:
         entry_points:
                 - bw2-browser = bw2ui.bin.bw2_browser:main
                 - bw2-web     = bw2ui.bin.bw2_web:main
+
+        noarch: python
