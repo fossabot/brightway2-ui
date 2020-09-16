@@ -9,6 +9,7 @@ requirements:
         build:
                 - python
                 - setuptools
+                - setuptools_scm
         run:
                 - python >=3.6
                 - brightway2 >2.1.1
