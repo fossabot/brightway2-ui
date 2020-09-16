@@ -2,8 +2,9 @@ from setuptools import setup
 
 setup(
     name="bw2ui",
-    version="0.25.0",
     packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     package_data={
         "bw2ui.web": [
             "static/blueprint/*.css",

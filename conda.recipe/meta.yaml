@@ -1,9 +1,9 @@
 package:
         name: bw2ui
-        version: "0.25.0"
+        version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-        git_url: https://bitbucket.org/tomas_navarrete/brightway2-ui.git
+        git_url: ../
 
 requirements:
         build:
