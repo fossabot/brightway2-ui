@@ -44,6 +44,12 @@ from brightway2 import (
     methods,
     projects
 )
+from bw2data.parameters import (
+    ActivityParameter,
+    DatabaseParameter,
+    Group,
+    ProjectParameter
+)
 from docopt import docopt
 from tabulate import tabulate
 
@@ -88,8 +94,10 @@ Basic commands:
     wh: Write history to a text file.
     autosave: Toggle autosave behaviour on and off.
 
-Working with databases:
+Working with projects:
     lpj: List available projects.
+
+Working with databases:
     ldb: List available databases.
     db name: Go to database name. No quotes needed.
     s string: Search activity names in current database with string.
@@ -115,6 +123,19 @@ by name.
 Working with methods:
     lm: List methods.
     mi: Show method metadata. (must select method/category/subcategory first)
+
+Working with parameters:
+    lpam: List all parameters (Project, Database and Activity) showing only \
+basic columns (data).
+    lpam [-f]: List all parameters showing all columns (data) of each parameter.
+    lpam [-f] -g {YY}: List parameters for a specific group. Use db or specific \
+data. add as first option -f to show all columns.
+    lpamg: show parameter groups
+    ap [-f]: If an activity is selected, show activity parameters
+    dp [-f]: if a database is selected show database parameters
+    pp [-f]: If a project is selected show project parameters
+    fp : Find parameters (Project, Database or Activity) by name
+    sp : search a parameter (accepts wildcards)
     """
 
 
@@ -172,6 +193,8 @@ class ActivityBrowser(cmd.Cmd):
                 self.choose_database(self.current_options["options"][index])
             elif self.current_options["type"] == "activities":
                 self.choose_activity(self.current_options["options"][index])
+            elif self.current_options["type"] == "groups":
+                self.choose_group(self.current_options["options"][index])
             elif self.current_options["type"] == "history":
                 option = self.current_options["options"][index]
                 if option[0] == "database":
@@ -472,7 +495,9 @@ Autosave is turned %(autosave)s.""" % {
             )
         objs.sort(key=lambda x: x["name"])
         if extended:
-            format_string = "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"  # NOQA: E501
+            format_string = (
+                "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"
+            )  # NOQA: E501
         else:
             format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)"
 
@@ -597,6 +622,55 @@ Autosave is turned %(autosave)s.""" % {
             mkey = (self.method, self.category, self.subcategory)
             self.print_cfs([mkey], self.activity)
         self.update_prompt()
+
+    #################################
+    # GROUP / Parameters Management #
+    #################################
+
+    def dehydrate_params(self, params, fields):
+        """ Remove keys of each param dictionnary, and only keep fields."""
+        return [{k: v for k, v in p.dict.items() if k in fields} for p in params]
+
+    def acquire_params(self, full_cols, the_group):
+        if full_cols:
+            pparams = [p.dict for p in ProjectParameter.select()]
+            dparams = [p.dict for p in DatabaseParameter.select()]
+            aparams = [p.dict for p in ActivityParameter.select()]
+        else:
+            pparams = self.dehydrate_params(
+                ProjectParameter.select(), ["name", "formula", "amount"]
+            )
+            dparams = self.dehydrate_params(
+                DatabaseParameter.select(), ["database", "name", "formula", "amount"]
+            )
+            aparams = self.dehydrate_params(
+                ActivityParameter.select(),
+                ["database", "code", "group", "name", "formula", "amount"],
+            )
+        if the_group:
+            if the_group.lower() == "project":
+                dparams = []
+                aparams = []
+            else:
+                pparams = []
+                dparams = [p for p in dparams if p["database"] == the_group]
+                aparams = [p for p in aparams if p["group"] == the_group]
+
+        return pparams, dparams, aparams
+
+    def choose_group(self, group_id):
+        g = Group.get_by_id(group_id)
+        pparams, dparams, aparams = self.acquire_params(False, g.name)
+        if len(pparams) > 0:
+            print("Project Parameters")
+            print(tabulate(pparams, headers="keys"))
+        if len(dparams) > 0:
+            print("Database Parameters")
+            print(tabulate(dparams, headers="keys"))
+        if len(aparams) > 0:
+            print("Activity Parameters")
+            print(tabulate(aparams, headers="keys"))
+        self.set_current_options(None)
 
     ########################
     # Default user actions #
@@ -837,8 +911,10 @@ Autosave is turned %(autosave)s.""" % {
 
                 field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
                 print("%(tab)s%(field)s:" % {"tab": indentation_char, "field": field})
-                for l in field_contents:
-                    print("%(tab)s%(l)s" % {"tab": indentation_char * 2, "l": l})
+                for line in field_contents:
+                    print(
+                        "%(tab)s%(line)s" % {"tab": indentation_char * 2, "line": line}
+                    )
 
     def do_l(self, arg):
         """List current options"""
@@ -916,7 +992,7 @@ Autosave is turned %(autosave)s.""" % {
 
     def do_s(self, arg):
         """Search activity names."""
-        re1a = r"(-loc\s)"  # Any Single Character 1
+        re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
         re1b = r"(\{.*\})"  # Curly Braces 1
         re2 = r"\s(.+)"
         rg = re.compile(re1a + re1b + re2, re.IGNORECASE | re.DOTALL)
@@ -1032,6 +1108,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select at least a method first")
 
     def do_ta(self, arg):
+        """ Display top activities if an lca is active. """
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
@@ -1046,6 +1123,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select an activity ")
 
     def do_te(self, arg):
+        """ Display top emissions if an lca is active. """
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
@@ -1083,6 +1161,168 @@ Autosave is turned %(autosave)s.""" % {
             )
 
             self.print_current_options("Activities in database")
+
+    def do_lpam(self, arg):
+        """List all (Project, Database, Activity) parameters. """
+        re1 = r"(-f\s)?"  # -f and a single whitespace Char
+        re2a = r"(-g\s)"  # Any Single Whitespace Character 1
+        re2b = r"(\{.*\})"  # Curly Braces 1
+        rg = re.compile(re1 + re2a + re2b, re.IGNORECASE | re.DOTALL)
+        m = rg.search(arg)
+        full_cols = False
+        the_group = None
+        if m is None and "-g" in arg:
+            print("Missing group in curly braces in command: -g {DANCE} ...")
+            return
+        elif m:
+            c2 = m.group(3)
+            the_group = c2.strip("{}")
+            print("Filtering for group {} after search".format(the_group))
+            full_cols = m.group(1) is not None
+        if not self.project:
+            print("Please choose a project first")
+        else:
+            pparams, dparams, aparams = self.acquire_params(full_cols, the_group)
+            if len(pparams) > 0:
+                print("Project Parameters")
+                print(tabulate(pparams, headers="keys"))
+            if len(dparams) > 0:
+                print("Database Parameters")
+                print(tabulate(dparams, headers="keys"))
+            if len(aparams) > 0:
+                print("Activity Parameters")
+                print(tabulate(aparams, headers="keys"))
+
+    def do_lpamg(self, arg):
+        """List parameter groups. """
+        groups = [g for g in Group.select()]
+        self.set_current_options(
+            {
+                "type": "groups",
+                "options": [g.id for g in groups],
+                "formatted": [g.name for g in groups],
+            }
+        )
+        self.print_current_options("Parameter groups: ")
+
+    def do_ap(self, arg):
+        """ If an activity is selected, show its parameters. """
+        if self.activity:
+            param_objects = ActivityParameter.select().where(
+                (ActivityParameter.code == self.activity[1])
+                & (ActivityParameter.database == self.database)
+            )
+            aparams = []
+            if "-f" not in arg:
+                aparams = self.dehydrate_params(
+                    param_objects,
+                    ["database", "code", "group", "name", "formula", "amount"],
+                )
+            else:
+                aparams = [p.dict for p in param_objects]
+            if len(aparams) > 0:
+                print(tabulate(aparams, headers="keys"))
+            else:
+                print(
+                    "No Activity parameters for {}".format(get_activity(self.activity))
+                )
+        else:
+            print("Please select an activity first")
+
+    def do_dp(self, arg):
+        """ List all database parameters. """
+        if self.database:
+            param_objects = DatabaseParameter.select().where(
+                DatabaseParameter.database == self.database
+            )
+            dparams = []
+            if "-f" not in arg:
+                dparams = self.dehydrate_params(
+                    param_objects, ["name", "formula", "amount"]
+                )
+            else:
+                dparams = [p.dict for p in param_objects]
+
+            if len(dparams) > 0:
+                print(tabulate(dparams, headers="keys"))
+            else:
+                print("No database parameters in database {}".format(self.database))
+        else:
+            print("Please select a database first")
+
+    def do_pp(self, arg):
+        """ List all project parameters. """
+        if self.project:
+            param_objects = ProjectParameter.select()
+            pparams = []
+            if "-f" not in arg:
+                pparams = self.dehydrate_params(
+                    param_objects, ["database", "name", "formula", "amount"]
+                )
+            else:
+                pparams = [p.dict for p in param_objects]
+            if len(pparams) > 0:
+                print(tabulate(pparams, headers="keys"))
+            else:
+                print("No project parameters in {}".format(self.project))
+        else:
+            print("Please select a project first")
+
+    def do_fp(self, arg):
+        """ Find a specific parameter by name. """
+        if self.project:
+            pparams, dparams, aparams = self.acquire_params(False, None)
+
+            for p in pparams:
+                p.update({"parameter type": "project"})
+            for p in dparams:
+                p.update({"parameter type": "database"})
+            for p in aparams:
+                p.update({"parameter type": "activity"})
+
+            p = [p for p in pparams + dparams + aparams if p["name"] == arg]
+            if len(p) > 0:
+                print(tabulate(p, headers="keys"))
+
+        else:
+            print("Please select a project first")
+
+    def do_sp(self, arg):
+        """ Search for a parameter by name, accepting wildcards in arg."""
+        if self.project:
+            pparams_objects = ProjectParameter.select().where(
+                ProjectParameter.name % arg
+            )
+            dparams_objects = DatabaseParameter.select().where(
+                DatabaseParameter.name % arg
+            )
+            aparams_objects = ActivityParameter.select().where(
+                ActivityParameter.name % arg
+            )
+
+            pparams = self.dehydrate_params(
+                pparams_objects, ["database", "name", "formula", "amount"]
+            )
+            dparams = self.dehydrate_params(
+                dparams_objects, ["name", "formula", "amount"]
+            )
+            aparams = self.dehydrate_params(
+                aparams_objects,
+                ["database", "code", "group", "name", "formula", "amount"],
+            )
+
+            for p in pparams:
+                p.update({"parameter type": "project"})
+            for p in dparams:
+                p.update({"parameter type": "database"})
+            for p in aparams:
+                p.update({"parameter type": "activity"})
+
+            p = [p for p in pparams + dparams + aparams]
+            if len(p) > 0:
+                print(tabulate(p, headers="keys"))
+        else:
+            print("Please select a project first")
 
 
 def main():

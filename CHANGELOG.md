@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.25.0] - 2020-09-16
+
+### Added
+
++ Commands to list and search parameters
+
 ## [0.24.0] - 2020-01-30
 
 ### Added
