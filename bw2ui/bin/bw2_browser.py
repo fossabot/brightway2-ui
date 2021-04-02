@@ -699,10 +699,11 @@ Autosave is turned %(autosave)s.""" % {
         key = (self.database, arg)
         if not self.database:
             print("Please choose a database first")
-        elif key not in Database(self.database).load():
-            print("Invalid activity id")
-        else:
+        try:
+            a = get_activity(key)
             self.choose_activity(key)
+        except:
+            print(f"Invalid activity id {key[1]}")
 
     def do_autosave(self, arg):
         """Toggle autosave behaviour.
