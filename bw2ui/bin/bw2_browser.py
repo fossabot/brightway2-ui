@@ -42,14 +42,15 @@ from brightway2 import (
     databases,
     get_activity,
     methods,
-    projects
+    projects,
 )
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
     Group,
-    ProjectParameter
+    ProjectParameter,
 )
+from bw2data.errors import UnknownObject
 from docopt import docopt
 from tabulate import tabulate
 
@@ -495,9 +496,7 @@ Autosave is turned %(autosave)s.""" % {
             )
         objs.sort(key=lambda x: x["name"])
         if extended:
-            format_string = (
-                "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"
-            )  # NOQA: E501
+            format_string = "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"  # NOQA: E501
         else:
             format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)"
 
@@ -700,7 +699,7 @@ Autosave is turned %(autosave)s.""" % {
         if not self.database:
             print("Please choose a database first")
         try:
-            a = get_activity(key)
+            _ = get_activity(key)
             self.choose_activity(key)
         except:
             print(f"Invalid activity id {key[1]}")
@@ -993,44 +992,53 @@ Autosave is turned %(autosave)s.""" % {
 
     def do_s(self, arg):
         """Search activity names."""
-        re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
-        re1b = r"(\{.*\})"  # Curly Braces 1
-        re2 = r"\s(.+)"
-        rg = re.compile(re1a + re1b + re2, re.IGNORECASE | re.DOTALL)
-        m = rg.search(arg)
-        needle = arg  # Find the needle in the haystack
-        if m is None and "-loc" in arg:
-            print("Missing location in curly braces in command: -loc {MX} ...")
-            return
-        elif m:
-            c2 = m.group(2)
-            location = c2.strip("{}")
-            needle = m.group(3)
-            print("Filtering for location {} after search".format(location))
-
-        if m:
-            specials = [" ", "/", "-", "&"]
-            if not any(special in location for special in specials):  # complex location
-                criteria = {"location": location}
-                results = Database(self.database).search(
-                    needle, filter=criteria, limit=self.search_limit
-                )
-            else:
-                results = Database(self.database).search(needle, limit=None)
-                results = [
-                    r for r in results if r["location"].lower() == location.lower()
-                ]
+        if not self.database:
+            print("Please choose a database first")
         else:
-            results = Database(self.database).search(needle, limit=self.search_limit)
-        results_keys = [r.key for r in results]
-        self.set_current_options(
-            {
-                "type": "activities",
-                "options": results_keys,
-                "formatted": [self.format_activity(key) for key in results],
-            }
-        )
-        self.print_current_options("Search results for %(query)s" % {"query": needle})
+            re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
+            re1b = r"(\{.*\})"  # Curly Braces 1
+            re2 = r"\s(.+)"
+            rg = re.compile(re1a + re1b + re2, re.IGNORECASE | re.DOTALL)
+            m = rg.search(arg)
+            needle = arg  # Find the needle in the haystack
+            if m is None and "-loc" in arg:
+                print("Missing location in curly braces in command: -loc {MX} ...")
+                return
+            elif m:
+                c2 = m.group(2)
+                location = c2.strip("{}")
+                needle = m.group(3)
+                print("Filtering for location {} after search".format(location))
+
+            if m:
+                specials = [" ", "/", "-", "&"]
+                if not any(
+                    special in location for special in specials
+                ):  # complex location
+                    criteria = {"location": location}
+                    results = Database(self.database).search(
+                        needle, filter=criteria, limit=self.search_limit
+                    )
+                else:
+                    results = Database(self.database).search(needle, limit=None)
+                    results = [
+                        r for r in results if r["location"].lower() == location.lower()
+                    ]
+            else:
+                results = Database(self.database).search(
+                    needle, limit=self.search_limit
+                )
+            results_keys = [r.key for r in results]
+            self.set_current_options(
+                {
+                    "type": "activities",
+                    "options": results_keys,
+                    "formatted": [self.format_activity(key) for key in results],
+                }
+            )
+            self.print_current_options(
+                "Search results for %(query)s" % {"query": needle}
+            )
 
     def do_u(self, arg):
         """List upstream processes"""
