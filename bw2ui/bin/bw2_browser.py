@@ -104,6 +104,8 @@ Working with databases:
     s string: Search activity names in current database with string.
     s -loc {LOCATION} string: Search activity names in current database with \
 string and location LOCATION.
+    s -cat {CAT::SUBCAT::SUBSUBCAT} string: Search activity names in current database with \
+string and category cat, subcat, subcat [useful for biosphere].
 
 Working with activities:
     a id: Go to activity id in current database. Complex ids in quotes.
@@ -995,7 +997,14 @@ Autosave is turned %(autosave)s.""" % {
         if not self.database:
             print("Please choose a database first")
         else:
-            re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
+            re1a = r"."
+            search_criterion = None
+            if "-loc" in arg:
+                re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
+                search_criterion = "location"
+            elif "-cat" in arg:
+                re1a = r"(-cat\s)"  # Any Single Whitespace Character 1
+                search_criterion = "category"
             re1b = r"(\{.*\})"  # Curly Braces 1
             re2 = r"\s(.+)"
             rg = re.compile(re1a + re1b + re2, re.IGNORECASE | re.DOTALL)
@@ -1004,26 +1013,34 @@ Autosave is turned %(autosave)s.""" % {
             if m is None and "-loc" in arg:
                 print("Missing location in curly braces in command: -loc {MX} ...")
                 return
+            elif m is None and "-cat " in arg:
+                print("Missing category in curly braces in command: -cat {water} ...")
+                return
             elif m:
                 c2 = m.group(2)
-                location = c2.strip("{}")
+                criterion_value = c2.strip("{}")
                 needle = m.group(3)
-                print("Filtering for location {} after search".format(location))
+                print("Filtering for {} {} after search".format(search_criterion, criterion_value))
 
-            if m:
-                specials = [" ", "/", "-", "&"]
+            specials = [" ", "/", "-", "&"]
+            if m and search_criterion == "location":
                 if not any(
-                    special in location for special in specials
-                ):  # complex location
-                    criteria = {"location": location}
+                    special in criterion_value for special in specials
+                ):  # complex criterion_value
+                    criteria = {"location": criterion_value}
                     results = Database(self.database).search(
                         needle, filter=criteria, limit=self.search_limit
                     )
                 else:
                     results = Database(self.database).search(needle, limit=None)
                     results = [
-                        r for r in results if r["location"].lower() == location.lower()
+                        r for r in results if r[search_criterion].lower() == criterion_value.lower()
                     ]
+            elif m and search_criterion == "category":
+                criteria = {"categories": criterion_value.split("::")}
+                results = Database(self.database).search(
+                    needle, filter=criteria, limit=self.search_limit
+                )
             else:
                 results = Database(self.database).search(
                     needle, limit=self.search_limit
