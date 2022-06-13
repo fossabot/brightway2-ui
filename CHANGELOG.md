@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.28.0] - 2022-06-13
+
+### Added
+
++ Feature #11 - search by location (useful for biosphere flows)
+
 ## [0.27.0] - 2021-06-17
 
 ### Added
