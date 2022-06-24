@@ -39,7 +39,12 @@ setup(
     author_email="cmutel@gmail.com",
     license=open("LICENSE.txt").read(),
     install_requires=[
-        "brightway2>=2.1.0",
+        # The requirements here are abstract, but they are different
+        # for brightway25 and brightway2.
+        # For brightway25, bw2calc must be >= 2.0.dev10
+        # for brightway2 brightwaycalc must be < 2
+        "bw2data",
+        "bw2calc",
         "docopt",
         "eight",
         "flask",

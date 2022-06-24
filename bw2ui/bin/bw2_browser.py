@@ -33,17 +33,17 @@ import uuid
 import warnings
 import webbrowser
 
-from brightway2 import (
+from bw2data import (
     Database,
+    projects,
     Method,
-    MultiLCA,
     calculation_setups,
     config,
     databases,
     get_activity,
-    methods,
-    projects,
+    methods
 )
+from bw2calc import MultiLCA
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
@@ -1110,7 +1110,7 @@ Autosave is turned %(autosave)s.""" % {
                 for m in methods:
                     if m[0] == self.method:
                         method_key_list.append(m)
-            bw2browser_cs = {"inv": [{self.activity: 1}], "ia": method_key_list}
+            bw2browser_cs = {"inv": [{get_activity(self.activity): 1}], "ia": method_key_list}
             tmp_cs_id = uuid.uuid1()
             calculation_setups[str(tmp_cs_id)] = bw2browser_cs
             mlca = MultiLCA(str(tmp_cs_id))

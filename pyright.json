@@ -1,0 +1,6 @@
+{
+    "include": [
+        "bw2ui"
+    ],
+    "root": "bw2ui"
+}

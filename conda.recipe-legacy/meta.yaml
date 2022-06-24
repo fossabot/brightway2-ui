@@ -1,5 +1,5 @@
 package:
-        name: bw25ui
+        name: bw2ui
         version: {{ GIT_DESCRIBE_TAG }}
 
 source:
@@ -12,8 +12,8 @@ requirements:
                 - setuptools_scm
         run:
                 - python >=3.6
-                - brightway25
-                - bw2calc >=2.0.dev10
+                - brightway2
+                - bw2calc <2
                 - docopt
                 - eight
                 - flask

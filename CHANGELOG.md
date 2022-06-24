@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.29.0] - 2022-08-22
+
+### Added
+
++ Full compatibility with brightway25
+
 ## [0.28.0] - 2022-06-13
 
 ### Added
