@@ -1,11 +1,11 @@
 Brightway2-UI
 =============
 
-This fork is now the official repo for  Brightway2-UI:
+This is now the official repo for  Brightway2-UI:
 
-> a web and command line user interface, part of the **Brightway2 LCA framework** <https://brightwaylca.org>. 
+> a web and command line user interface, part of the **Brightway2 LCA framework** <https://brightwaylca.dev>. 
 
-The source code is hosted on Bitbucket: <https://bitbucket.org/tomas_navarrete/brightway2-ui>.
+The _original_ source code was hosted on Bitbucket: <https://bitbucket.org/tomas_navarrete/brightway2-ui>.
 
 Compatibility with Brightway2X
 ==============================
