@@ -1,0 +1,21 @@
+jobs:
+  conda-pkg-build:
+    name: conda package build Linux
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.11
+          auto-activate-base: true
+      - run: |
+          conda info
+          conda config --set auto_update_conda False
+          conda install -y -q conda-build anaconda-client
+          cd conda.recipe
+          conda config --set anaconda_upload no
+          conda build -c conda-forge -c cmutel -c haasad .
+
