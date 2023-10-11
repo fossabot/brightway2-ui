@@ -21,7 +21,7 @@ Brightway25
 To install a package compatible with brightway25:
 
 ```bash
-conda instal -c tomas_navarrete bw25ui
+conda install -c tomas_navarrete bw25ui
 ```
 
 Brightway2
@@ -30,7 +30,7 @@ Brightway2
 To install a package compatible with brightway2:
 
 ```bash
-conda instal -c tomas_navarrete bw2ui
+conda install -c tomas_navarrete bw2ui
 ```
 
 Roadmap
