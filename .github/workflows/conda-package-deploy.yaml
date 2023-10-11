@@ -1,0 +1,52 @@
+---
+on:
+  push:
+jobs:
+  conda-pkg-build-bw25:
+    name: build bw25ui 
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.11
+          auto-activate-base: true
+      - run: |
+          conda info
+          conda config --set auto_update_conda False
+          conda install -y -q conda-libmamba-solver
+          conda config --set solver libmamba
+          conda install -y -q conda-build anaconda-client
+          cd conda.recipe
+          anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          conda config --set anaconda_upload yes
+          conda build -c conda-forge -c cmutel -c haasad .
+  conda-pkg-build-legacy:
+    name: build bw2ui
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.11
+          auto-activate-base: true
+      - run: |
+          conda info
+          conda config --set auto_update_conda False
+          conda install -y -q conda-libmamba-solver
+          conda config --set solver libmamba
+          conda install -y -q conda-build anaconda-client
+          cd conda.recipe-legacy
+          anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          conda config --set anaconda_upload yes
+          conda build -c conda-forge -c cmutel -c haasad .
