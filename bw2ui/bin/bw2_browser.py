@@ -32,25 +32,24 @@ import traceback
 import uuid
 import warnings
 import webbrowser
-
+from bw2calc import MultiLCA
 from bw2data import (
     Database,
-    projects,
     Method,
     calculation_setups,
     config,
     databases,
     get_activity,
     methods,
+    projects
 )
-from bw2calc import MultiLCA
+from bw2data.errors import UnknownObject
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
     Group,
-    ProjectParameter,
+    ProjectParameter
 )
-from bw2data.errors import UnknownObject
 from docopt import docopt
 from tabulate import tabulate
 
@@ -117,6 +116,7 @@ by name.
     r: Choose a random activity from current database.
     u: List upstream activities (inputs for the current activity).
     up: List upstream activities with pedigree info if avail (inputs for the current activity).
+    uu: List upstream activities with formula info if avail.
     d: List downstream activities (activities which consume current activity).
     b: List biosphere flows for the current activity.
     cfs: Show characterization factors for current activity and current method.
@@ -140,6 +140,8 @@ data. add as first option -f to show all columns.
     pp [-f]: If a project is selected show project parameters
     fp : Find parameters (Project, Database or Activity) by name
     sp : search a parameter (accepts wildcards)
+Misc:
+    tsv: [filename] export latest table to tsv file (e.g.: results or cfs)
     """
 
 
@@ -344,10 +346,16 @@ Autosave is turned %(autosave)s.""" % {
             method_ = Method(m)
             cfs = method_.load()
             if activity:
-                cfs = [cf for cf in cfs if tuple(cf[0]) == activity]
+                cfs = [cf for cf in cfs if get_activity(cf[0]).key == activity]
             for cf in cfs:
-                flow_key = tuple((cf[0][0], cf[0][1]))
-                flow = get_activity(flow_key)
+                # in bw2, the first elment of the cf data is a key -> tuple('db', 'id')
+                # in bw25, the first element is single int id of the activity
+                # this looks hackish, but it allows to keep 1 code-base for both version of bw
+                if isinstance(cf[0], int):
+                    flow = get_activity(cf[0])
+                else:
+                    flow_key = tuple((cf[0][0], cf[0][1]))
+                    flow = get_activity(flow_key)
                 flow_cat_tup = flow["categories"]
                 flow_cat = flow_cat_tup[0]
                 flow_subcat = None
@@ -364,8 +372,18 @@ Autosave is turned %(autosave)s.""" % {
                 ]
                 table_lines.append(line)
         if table_lines:
+            headers = [
+                "method",
+                "category",
+                "cf",
+                "flow",
+                "flow_category",
+                "flow_subcategory",
+                "unit",
+            ]
             print("CFS")
-            print(tabulate(table_lines))
+            self.tabulate_data = tabulate(table_lines, headers=headers, tablefmt="tsv")
+            print(tabulate(table_lines, headers=headers))
         else:
             print("Not characterized by method")
 
@@ -630,8 +648,10 @@ Autosave is turned %(autosave)s.""" % {
     def choose_subcategory(self, subcategory):
         self.subcategory = subcategory
         self.history.append(("subcategory", subcategory))
+        # using ecoinvent_interface creates biosphere dbs that are not only called "biosphere3"
+        # so we test now only against a substring, not the exact name
         if (
-            self.activity and self.database == "biosphere3"
+            self.activity and "biosphere" in self.database
         ):  # TODO: recover generic name instead of hard coded one
             mkey = (self.method, self.category, self.subcategory)
             self.print_cfs([mkey], self.activity)
@@ -713,11 +733,17 @@ Autosave is turned %(autosave)s.""" % {
         key = (self.database, arg)
         if not self.database:
             print("Please choose a database first")
+        # Support the use of int ids (used in bw25)
         try:
-            _ = get_activity(key)
-            self.choose_activity(key)
-        except:
-            print(f"Invalid activity id {key[1]}")
+            a_numerical_id = int(arg)
+            activity = get_activity(a_numerical_id)
+            self.choose_activity(activity.key)
+        except ValueError:
+            try:
+                _ = get_activity(key)
+                self.choose_activity(key)
+            except:
+                print(f"Invalid activity id {key[1]}")
 
     def do_autosave(self, arg):
         """Toggle autosave behaviour.
@@ -741,8 +767,9 @@ Autosave is turned %(autosave)s.""" % {
 
     def do_cfs(self, arg):
         """Print cfs of biosphere flows."""
+        # Support multiple biosphere databases in one project
         if (
-            self.activity and self.database == "biosphere3"
+            self.activity and "biosphere" in self.database
         ) or self.method:  # show the cfs for the given flow
             current_methods = [m for m in methods if m[0] == self.method]
             if self.category:  # show cfs for current cat, current act
@@ -756,6 +783,15 @@ Autosave is turned %(autosave)s.""" % {
             return False
         self.print_cfs(current_methods, self.activity)
         self.update_prompt()
+
+    def do_tsv(self, arg):
+        """write the latest table created as tsv file."""
+        output_filename = "output.tsv"
+        if arg:
+            output_filename = arg
+        if self.tabulate_data:
+            with open(output_filename, "w") as f:
+                f.write(self.tabulate_data)
 
     def do_cp(self, arg):
         """Clear preferences. Only for development."""
@@ -825,6 +861,7 @@ Autosave is turned %(autosave)s.""" % {
 
     Database: %(database)s
     ID: %(id)s
+    numerical_id: %(n_id)s
     Product: %(product)s
     Production amount: %(amount).2g %(unit)s
 
@@ -839,6 +876,8 @@ Autosave is turned %(autosave)s.""" % {
                     "product": ds.get("reference product") or ds.get("name", "Unknown"),
                     "database": self.activity[0],
                     "id": self.activity[1],
+                    # numerical ids are a feature of bw25
+                    "n_id": ds.get("id") or "NA",
                     "amount": amount,
                     "unit": ds.get("unit", ""),
                     "classifications": "\n\t\t\t".join(
@@ -876,6 +915,7 @@ Autosave is turned %(autosave)s.""" % {
 
     Database: %(database)s
     ID: %(id)s
+    numerical_id: %(n_id)s
     Product: %(product)s
     Production amount: %(amount).2g %(unit)s
 
@@ -890,6 +930,8 @@ Autosave is turned %(autosave)s.""" % {
                     "product": ds.get("reference product") or ds.get("name", "Unknown"),
                     "database": self.activity[0],
                     "id": self.activity[1],
+                    # numerical ids are a feature of bw25
+                    "n_id": ds.get("id") or "NA",
                     "amount": amount,
                     "unit": ds.get("unit", ""),
                     "classifications": "\n\t\t\t".join(
@@ -923,7 +965,6 @@ Autosave is turned %(autosave)s.""" % {
                     "code",
                 ]
             ]:
-
                 field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
                 print("%(tab)s%(field)s:" % {"tab": indentation_char, "field": field})
                 for line in field_contents:
@@ -1155,6 +1196,11 @@ Autosave is turned %(autosave)s.""" % {
                 ]
                 for i, score in enumerate(mlca.results.T.tolist())
             ]
+            self.tabulate_data = tabulate(
+                formatted_res,
+                headers=["method", "category", "subcategory", "unit", "score"],
+                tablefmt="tsv",
+            )
             print(
                 tabulate(
                     formatted_res,

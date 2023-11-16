@@ -6,6 +6,8 @@
 
 + up command to display pedigree data on exchanges if available
 + show CFS for full methods or per selected biosphere3 activity
++ add command to output cf lists as tsv, or results of LCIA calculation
++ support numerical activity ids (as used in bw25)
 
 
 ## [0.29.0] - 2022-08-22
