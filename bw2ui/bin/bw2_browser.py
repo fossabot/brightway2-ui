@@ -344,15 +344,22 @@ Autosave is turned %(autosave)s.""" % {
             method_ = Method(m)
             cfs = method_.load()
             if activity:
-                cfs = [cf for cf in cfs if cf[0] == activity]
+                cfs = [cf for cf in cfs if tuple(cf[0]) == activity]
             for cf in cfs:
-                activity_ = get_activity(cf[0])
+                flow_key = tuple((cf[0][0], cf[0][1]))
+                flow = get_activity(flow_key)
+                flow_cat_tup = flow["categories"]
+                flow_cat = flow_cat_tup[0]
+                flow_subcat = None
+                if len(flow_cat_tup) == 2:
+                    flow_subcat = flow_cat_tup[1]
                 line = [
-                    activity_.get("name", "Unknown"),
-                    activity_.get("categories", []),
                     m[1],
                     m[2],
                     cf[1],
+                    flow["name"],
+                    flow_cat,
+                    flow_subcat,
                     method_.metadata["unit"],
                 ]
                 table_lines.append(line)
