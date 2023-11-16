@@ -1,5 +1,12 @@
 # ui Changelog
 
+## [unreleased]
+
+### Added
+
++ up command to display pedigree data on exchanges if available
+
+
 ## [0.29.0] - 2022-08-22
 
 ### Added

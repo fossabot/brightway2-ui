@@ -41,7 +41,7 @@ from bw2data import (
     config,
     databases,
     get_activity,
-    methods
+    methods,
 )
 from bw2calc import MultiLCA
 from bw2data.parameters import (
@@ -116,6 +116,7 @@ by name.
     web: Open current activity in web browser. Must have bw2-web running.
     r: Choose a random activity from current database.
     u: List upstream activities (inputs for the current activity).
+    up: List upstream activities with pedigree info if avail (inputs for the current activity).
     d: List downstream activities (activities which consume current activity).
     b: List biosphere flows for the current activity.
     cfs: Show characterization factors for current activity and current method.
@@ -250,7 +251,7 @@ class ActivityBrowser(cmd.Cmd):
     ####################
 
     def update_prompt(self):
-        """ update prompt and upstream/downstream activity lists """
+        """update prompt and upstream/downstream activity lists"""
         self.invite = ">> "
         self.prompt = ""
         if self.activity:
@@ -428,7 +429,7 @@ Autosave is turned %(autosave)s.""" % {
         self.update_prompt()
 
     def load_database(self, database):
-        """Load database, trying first """
+        """Load database, trying first"""
         if database:
             if database not in databases:
                 print("Database %(name)s not found" % {"name": database})
@@ -480,7 +481,9 @@ Autosave is turned %(autosave)s.""" % {
         self.set_current_options(None)
         self.update_prompt()
 
-    def format_exchanges_as_options(self, es, kind, unit_override=None, extended=False):
+    def format_exchanges_as_options(
+        self, es, kind, unit_override=None, show_formulas=False, show_pedigree=False
+    ):
         objs = []
         for exc in es:
             if exc["type"] != kind:
@@ -493,12 +496,15 @@ Autosave is turned %(autosave)s.""" % {
                     "unit": unit_override or ds.get("unit", "unit"),
                     "amount": exc["amount"],
                     "formula": exc.get("formula", None),
+                    "pedigree": exc.get("pedigree", None),
                     "key": exc["input"],
                 }
             )
         objs.sort(key=lambda x: x["name"])
-        if extended:
+        if show_formulas:
             format_string = "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"  # NOQA: E501
+        elif show_pedigree:
+            format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)\n\t[pedigree: %(pedigree)s] "  # NOQA: E501
         else:
             format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)"
 
@@ -629,7 +635,7 @@ Autosave is turned %(autosave)s.""" % {
     #################################
 
     def dehydrate_params(self, params, fields):
-        """ Remove keys of each param dictionnary, and only keep fields."""
+        """Remove keys of each param dictionnary, and only keep fields."""
         return [{k: v for k, v in p.dict.items() if k in fields} for p in params]
 
     def acquire_params(self, full_cols, the_group):
@@ -1020,7 +1026,11 @@ Autosave is turned %(autosave)s.""" % {
                 c2 = m.group(2)
                 criterion_value = c2.strip("{}")
                 needle = m.group(3)
-                print("Filtering for {} {} after search".format(search_criterion, criterion_value))
+                print(
+                    "Filtering for {} {} after search".format(
+                        search_criterion, criterion_value
+                    )
+                )
 
             specials = [" ", "/", "-", "&"]
             if m and search_criterion == "location":
@@ -1034,7 +1044,9 @@ Autosave is turned %(autosave)s.""" % {
                 else:
                     results = Database(self.database).search(needle, limit=None)
                     results = [
-                        r for r in results if r[search_criterion].lower() == criterion_value.lower()
+                        r
+                        for r in results
+                        if r[search_criterion].lower() == criterion_value.lower()
                     ]
             elif m and search_criterion == "category":
                 criteria = {"categories": criterion_value.split("::")}
@@ -1066,13 +1078,22 @@ Autosave is turned %(autosave)s.""" % {
             self.format_exchanges_as_options(es, "technosphere")
             self.print_current_options("Upstream inputs")
 
+    def do_up(self, arg):
+        """List upstream processes"""
+        if not self.activity:
+            print("Need to choose an activity first")
+        else:
+            es = get_activity(self.activity).technosphere()
+            self.format_exchanges_as_options(es, "technosphere", show_pedigree=True)
+            self.print_current_options("Upstream inputs")
+
     def do_uu(self, arg):
         """List upstream processes extra info (formulas)"""
         if not self.activity:
             print("Need to choose an activity first")
         else:
             es = get_activity(self.activity).technosphere()
-            self.format_exchanges_as_options(es, "technosphere", extended=True)
+            self.format_exchanges_as_options(es, "technosphere", show_formulas=True)
             self.print_current_options("Upstream inputs")
 
     def do_web(self, arg):
@@ -1095,7 +1116,7 @@ Autosave is turned %(autosave)s.""" % {
         print("History exported to %(fp)s" % {"fp": fp})
 
     def do_G(self, arg):
-        """Do an LCIA of the selected activity + method[s] """
+        """Do an LCIA of the selected activity + method[s]"""
         if self.activity and self.method:
             method_key_list = []
 
@@ -1110,7 +1131,10 @@ Autosave is turned %(autosave)s.""" % {
                 for m in methods:
                     if m[0] == self.method:
                         method_key_list.append(m)
-            bw2browser_cs = {"inv": [{get_activity(self.activity): 1}], "ia": method_key_list}
+            bw2browser_cs = {
+                "inv": [{get_activity(self.activity): 1}],
+                "ia": method_key_list,
+            }
             tmp_cs_id = uuid.uuid1()
             calculation_setups[str(tmp_cs_id)] = bw2browser_cs
             mlca = MultiLCA(str(tmp_cs_id))
@@ -1134,7 +1158,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select at least a method first")
 
     def do_ta(self, arg):
-        """ Display top activities if an lca is active. """
+        """Display top activities if an lca is active."""
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
@@ -1149,7 +1173,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select an activity ")
 
     def do_te(self, arg):
-        """ Display top emissions if an lca is active. """
+        """Display top emissions if an lca is active."""
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
@@ -1165,7 +1189,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select an activity ")
 
     def do_aa(self, arg):
-        """List all activities in the current database. """
+        """List all activities in the current database."""
         if not self.database:
             print("Please choose a database first")
         else:
@@ -1189,7 +1213,7 @@ Autosave is turned %(autosave)s.""" % {
             self.print_current_options("Activities in database")
 
     def do_lpam(self, arg):
-        """List all (Project, Database, Activity) parameters. """
+        """List all (Project, Database, Activity) parameters."""
         re1 = r"(-f\s)?"  # -f and a single whitespace Char
         re2a = r"(-g\s)"  # Any Single Whitespace Character 1
         re2b = r"(\{.*\})"  # Curly Braces 1
@@ -1220,7 +1244,7 @@ Autosave is turned %(autosave)s.""" % {
                 print(tabulate(aparams, headers="keys"))
 
     def do_lpamg(self, arg):
-        """List parameter groups. """
+        """List parameter groups."""
         groups = [g for g in Group.select()]
         self.set_current_options(
             {
@@ -1232,7 +1256,7 @@ Autosave is turned %(autosave)s.""" % {
         self.print_current_options("Parameter groups: ")
 
     def do_ap(self, arg):
-        """ If an activity is selected, show its parameters. """
+        """If an activity is selected, show its parameters."""
         if self.activity:
             param_objects = ActivityParameter.select().where(
                 (ActivityParameter.code == self.activity[1])
@@ -1256,7 +1280,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Please select an activity first")
 
     def do_dp(self, arg):
-        """ List all database parameters. """
+        """List all database parameters."""
         if self.database:
             param_objects = DatabaseParameter.select().where(
                 DatabaseParameter.database == self.database
@@ -1277,7 +1301,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Please select a database first")
 
     def do_pp(self, arg):
-        """ List all project parameters. """
+        """List all project parameters."""
         if self.project:
             param_objects = ProjectParameter.select()
             pparams = []
@@ -1295,7 +1319,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Please select a project first")
 
     def do_fp(self, arg):
-        """ Find a specific parameter by name. """
+        """Find a specific parameter by name."""
         if self.project:
             pparams, dparams, aparams = self.acquire_params(False, None)
 
@@ -1314,7 +1338,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Please select a project first")
 
     def do_sp(self, arg):
-        """ Search for a parameter by name, accepting wildcards in arg."""
+        """Search for a parameter by name, accepting wildcards in arg."""
         if self.project:
             pparams_objects = ProjectParameter.select().where(
                 ProjectParameter.name % arg
