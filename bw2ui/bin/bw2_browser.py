@@ -41,14 +41,13 @@ from bw2data import (
     databases,
     get_activity,
     methods,
-    projects
+    projects,
 )
-from bw2data.errors import UnknownObject
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
     Group,
-    ProjectParameter
+    ProjectParameter,
 )
 from docopt import docopt
 from tabulate import tabulate
@@ -103,8 +102,8 @@ Working with databases:
     s string: Search activity names in current database with string.
     s -loc {LOCATION} string: Search activity names in current database with \
 string and location LOCATION.
-    s -cat {CAT::SUBCAT::SUBSUBCAT} string: Search activity names in current database with \
-string and category cat, subcat, subcat [useful for biosphere].
+    s -cat {CAT::SUBCAT::SUBSUBCAT} string: Search activity names in current database \
+with string and category cat, subcat, subcat [useful for biosphere].
 
 Working with activities:
     a id: Go to activity id in current database. Complex ids in quotes.
@@ -115,7 +114,8 @@ by name.
     web: Open current activity in web browser. Must have bw2-web running.
     r: Choose a random activity from current database.
     u: List upstream activities (inputs for the current activity).
-    up: List upstream activities with pedigree info if avail (inputs for the current activity).
+    up: List upstream activities with pedigree info if avail (inputs for the current \
+activity).
     uu: List upstream activities with formula info if avail.
     d: List downstream activities (activities which consume current activity).
     b: List biosphere flows for the current activity.
@@ -350,7 +350,8 @@ Autosave is turned %(autosave)s.""" % {
             for cf in cfs:
                 # in bw2, the first elment of the cf data is a key -> tuple('db', 'id')
                 # in bw25, the first element is single int id of the activity
-                # this looks hackish, but it allows to keep 1 code-base for both version of bw
+                # this looks hackish, but it allows to keep 1 code-base for both
+                # versions of bw (bw2 & bw25)
                 if isinstance(cf[0], int):
                     flow = get_activity(cf[0])
                 else:
@@ -648,8 +649,8 @@ Autosave is turned %(autosave)s.""" % {
     def choose_subcategory(self, subcategory):
         self.subcategory = subcategory
         self.history.append(("subcategory", subcategory))
-        # using ecoinvent_interface creates biosphere dbs that are not only called "biosphere3"
-        # so we test now only against a substring, not the exact name
+        # using ecoinvent_interface creates biosphere dbs that are not only called
+        # "biosphere3" so we test now only against a substring, not the exact name
         if (
             self.activity and "biosphere" in self.database
         ):  # TODO: recover generic name instead of hard coded one
@@ -742,7 +743,7 @@ Autosave is turned %(autosave)s.""" % {
             try:
                 _ = get_activity(key)
                 self.choose_activity(key)
-            except:
+            except ValueError:
                 print(f"Invalid activity id {key[1]}")
 
     def do_autosave(self, arg):
