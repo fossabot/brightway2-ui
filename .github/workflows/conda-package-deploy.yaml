@@ -3,7 +3,7 @@ on:
   push:
 jobs:
   conda-pkg-build-bw25:
-    name: build bw25ui 
+    name: build bw25ui
     runs-on: "ubuntu-latest"
     defaults:
       run:
