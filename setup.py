@@ -1,7 +1,12 @@
 from setuptools import setup
 
+import os
+
+# We still build 2 distributions: one for bw25, and one for bw2
+bw2ui_dist_name = os.getenv("BW2UI_DIST_NAME", "bw2ui")
+
 setup(
-    name="bw2ui",
+    name=bw2ui_dist_name,
     packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
     use_scm_version=True,
     setup_requires=["setuptools_scm"],

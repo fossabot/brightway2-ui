@@ -8,7 +8,7 @@ on:
     branches: [main, develop]
 
 env:
-  BW2UI_DIST_NAME: bw2ui
+  BW2UI_DIST_NAME: bw25ui
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI and TestPyPI
