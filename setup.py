@@ -4,7 +4,7 @@ setup(
     name="bw2ui",
     packages=["bw2ui", "bw2ui.web", "bw2ui.bin"],
     use_scm_version=True,
-    setup_requires=['setuptools_scm'],
+    setup_requires=["setuptools_scm"],
     package_data={
         "bw2ui.web": [
             "static/blueprint/*.css",
@@ -61,6 +61,7 @@ setup(
     },
     url="https://bitbucket.org/cmutel/brightway2-ui",
     long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     description="Web and command line user interface, part of the Brightway2 \
             LCA framework",
     classifiers=[
