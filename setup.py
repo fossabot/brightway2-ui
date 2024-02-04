@@ -50,6 +50,7 @@ setup(
         # for brightway2 brightwaycalc must be < 2
         "bw2data",
         "bw2calc",
+        "bw2analyzer",
         "docopt",
         "eight",
         "flask",
