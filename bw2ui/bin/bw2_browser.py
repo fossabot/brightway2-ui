@@ -1219,7 +1219,7 @@ Autosave is turned %(autosave)s.""" % {
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
                 lca = a.lca((self.method, self.category, self.subcategory))
-                top_a = lca.top_activities()
+                top_a = bwa.ContributionAnalysis().annotated_top_processes(lca)
                 print(tabulate(top_a, headers=["score", "supply", "Activity"]))
 
             else:
@@ -1234,7 +1234,7 @@ Autosave is turned %(autosave)s.""" % {
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
                 lca = a.lca((self.method, self.category, self.subcategory))
-                top_a = lca.top_emissions()
+                top_a = bwa.ContributionAnalysis().annotated_top_emissions(lca)
 
                 print(tabulate(top_a, headers=["score", "supply", "Activity"]))
 
