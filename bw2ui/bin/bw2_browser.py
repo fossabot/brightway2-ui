@@ -1446,6 +1446,19 @@ Autosave is turned %(autosave)s.""" % {
         else:
             print("Please select a method and an activity first.")
 
+    def do_sc(self, arg):
+        """Print the supply chain of an activity, accepting cutoff as arg."""
+        if self.activity:
+            if arg is None or arg == "":
+                bwa.print_recursive_supply_chain(self.activity)
+            else:
+                bwa.print_recursive_supply_chain(
+                    self.activity,
+                    cutoff=float(arg),
+                )
+        else:
+            print("Please select an activity first.")
+
 
 def main():
     arguments = docopt(__doc__, version="Brightway2 Activity Browser 2.0")
