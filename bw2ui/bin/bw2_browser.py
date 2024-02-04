@@ -18,6 +18,7 @@ Options:
 """
 from __future__ import print_function, unicode_literals
 
+import bw2analyzer as bwa
 import cmd
 import codecs
 import itertools
@@ -123,6 +124,7 @@ activity).
     G: if a method and activity are selected, do an lcia of the activity.
     ta: if an lcia of the activity has been done, list top activities.
     te: if an lcia of the activity has been done, list top emissions.
+    ca: do a contribution analysis of an activity with a method.
 
 Working with methods:
     lm: List methods.
@@ -1427,6 +1429,22 @@ Autosave is turned %(autosave)s.""" % {
                 print(tabulate(p, headers="keys"))
         else:
             print("Please select a project first")
+
+    def do_ca(self, arg):
+        """Print the recursive calculation of an LCA, accepting cutoff as arg."""
+        if all([self.method, self.category, self.subcategory]) and self.activity:
+            if arg is None or arg == "":
+                bwa.print_recursive_calculation(
+                    self.activity, (self.method, self.category, self.subcategory)
+                )
+            else:
+                bwa.print_recursive_calculation(
+                    self.activity,
+                    (self.method, self.category, self.subcategory),
+                    cutoff=float(arg),
+                )
+        else:
+            print("Please select a method and an activity first.")
 
 
 def main():
