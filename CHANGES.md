@@ -1,6 +1,18 @@
 # ui Changelog
 
-## [unreleased]
+## [0.31.0]
+
+### Added
+
++ ca command to print the recursive lcia calculation.
++ sc command to print the recursive supply chain.
+
+### Fixed
+
++ ta and te commands work again.
+
+
+## [0.30.0]
 
 ### Added
 
