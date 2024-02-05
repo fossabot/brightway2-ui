@@ -1214,7 +1214,7 @@ Autosave is turned %(autosave)s.""" % {
             print("Select at least a method first")
 
     def do_ta(self, arg):
-        """Display top activities if an lca is active."""
+        """Display top activities if an activity + method are selected."""
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
@@ -1229,14 +1229,16 @@ Autosave is turned %(autosave)s.""" % {
             print("Select an activity ")
 
     def do_te(self, arg):
-        """Display top emissions if an lca is active."""
+        """Display top emissions if an activity + method are selected."""
         if self.activity:
             if self.method and self.category and self.subcategory:
                 a = get_activity(self.activity)
                 lca = a.lca((self.method, self.category, self.subcategory))
-                top_a = bwa.ContributionAnalysis().annotated_top_emissions(lca)
-
-                print(tabulate(top_a, headers=["score", "supply", "Activity"]))
+                if is_legacy_bwa():
+                    top_e = bw2_compat_annotated_top_emissions(lca)
+                else:
+                    top_e = bwa.ContributionAnalysis().annotated_top_emissions(lca)
+                print(tabulate(top_e, headers=["score", "supply", "Activity"]))
 
             else:
                 print("Select at least a method first")
@@ -1458,6 +1460,35 @@ Autosave is turned %(autosave)s.""" % {
                 )
         else:
             print("Please select an activity first.")
+
+
+def bw2_compat_annotated_top_emissions(lca, names=True, **kwargs):
+    """Get list of most damaging biosphere flows in an LCA, sorted by ``abs(direct impact)``. # noqa: E501
+
+    Returns a list of tuples: ``(lca score, inventory amount, activity)``. If ``names`` is False, they returns the process key as the last element. # noqa: E501
+
+    """
+    # This is a temporary fix, until
+    # https://github.com/brightway-lca/brightway2-analyzer/issues/27
+    # gets correctly handled for bw2 branch
+    # The only difference in the actual code is the casting of indices to ints.
+
+    print("Using compat mode annotated_top_emissions")
+
+    ra, rp, rb = lca.reverse_dict()
+    results = [
+        (score, lca.inventory[int(index), :].sum(), rb[int(index)])
+        for score, index in bwa.ContributionAnalysis().top_emissions(
+            lca.characterized_inventory, **kwargs
+        )
+    ]
+    if names:
+        results = [(x[0], x[1], get_activity(x[2])) for x in results]
+    return results
+
+
+def is_legacy_bwa():
+    return bwa.__version__[0] == 0 and bwa.__version__[1] == 10
 
 
 def main():
