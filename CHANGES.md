@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.31.1]
+
+Minor bump to fix pipelines.
+
 ## [0.31.0]
 
 ### Added
