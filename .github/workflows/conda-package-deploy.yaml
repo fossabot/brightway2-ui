@@ -1,6 +1,10 @@
 ---
 on:
   push:
+    branches: [main, develop]
+    paths-ignore:
+      # Don't re-build if we only change README.md Or CHANGES.md
+      - '**.md'
 jobs:
   conda-pkg-build-bw25:
     name: build bw25ui

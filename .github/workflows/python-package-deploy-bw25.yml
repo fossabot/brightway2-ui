@@ -6,6 +6,9 @@ name: Publish Python 🐍 distributions 📦 to PyPI and TestPyPI
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      # Don't re-build if we only change README.md Or CHANGES.md
+      - '**.md'
 
 env:
   BW2UI_DIST_NAME: bw25ui
