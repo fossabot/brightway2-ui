@@ -1,36 +1,51 @@
-Brightway2-UI
-=============
+# Brightway2-UI
 
 This is now the official repo for  Brightway2-UI:
 
-> a web and command line user interface, part of the **Brightway2 LCA framework** <https://brightway.dev>. 
+> a web and command line user interface, part of the **Brightway2 LCA framework** <https://brightway.dev>.
 
 The _original_ source code was hosted on Bitbucket: <https://bitbucket.org/tomas_navarrete/brightway2-ui>.
 
-Compatibility with Brightway2X
-==============================
+## Compatibility with Brightway2X
 
 This repository is used to produce 2 packages: one compatible with brightway25 (`bw25ui`), and one compatible with brightway2 (`bw2ui`).
 
-Installation
-============
+## Installation
 
-Brightway25
------------
+Both, `conda` / `mamba` and wheels from [pypi.org](https://pypi.org) are available.
+The package names are different for Brightway25 and Brightway2, but the main executable script is still the same.
 
-To install a package compatible with brightway25:
+> [!NOTE]
+> The requirements here are abstract, but they are different for `brightway25` and `brightway2`.
+> For brightway25, bw2calc must be `>= 2.0.dev10` and bw2analyzer `>= 0.11`
+> for brightway2 bw2calc must be `< 2` and bw2analyzer `>=0.10`
 
-```bash
-conda install -c tomas_navarrete bw25ui
+### Brightway25
+
+To install a `conda` / `mamba` package compatible with brightway25:
+
+```commandline
+mamba install -c tomas_navarrete bw25ui
 ```
 
-Brightway2
-----------
+There is also a pip wheel that you can install with:
+
+```commandline
+pip install bw25ui
+```
+
+### Brightway2
 
 To install a package compatible with brightway2:
 
-```bash
-conda install -c tomas_navarrete bw2ui
+```commandline
+mamba install -c tomas_navarrete bw2ui
+```
+
+There is also a pip wheel that you can install with:
+
+```commandline
+pip install bw2ui
 ```
 
 Roadmap
@@ -51,5 +66,3 @@ Mid term
 --------
 
 Once Brightway3 starts to exist, the main branch will be dedicated to it, with a `bw3ui` package.
-
-

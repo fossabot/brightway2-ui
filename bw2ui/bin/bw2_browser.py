@@ -125,6 +125,7 @@ activity).
     ta: if an lcia of the activity has been done, list top activities.
     te: if an lcia of the activity has been done, list top emissions.
     ca: do a contribution analysis of an activity with a method.
+    sc: print recursive supply chain of an activity.
 
 Working with methods:
     lm: List methods.
