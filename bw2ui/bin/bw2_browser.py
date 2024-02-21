@@ -210,6 +210,12 @@ class ActivityBrowser(cmd.Cmd):
                     self.choose_database(option[1])
                 elif option[0] == "activity":
                     self.choose_activity(option[1])
+                elif option[0] == "method":
+                    self.choose_method(option[1])
+                elif option[0] == "category":
+                    self.choose_category(option[1])
+                elif option[0] == "subcategory":
+                    self.choose_subcategory(option[1])
             else:
                 # No current options.
                 print("No current options to choose from")
@@ -333,8 +339,10 @@ Autosave is turned %(autosave)s.""" % {
         kind, obj = command
         if kind == "database":
             return "Db: %(name)s" % {"name": obj}
-        else:
+        elif kind == "activity":
             return "Act: %(act)s" % {"act": self.format_activity(obj)}
+        else:
+            return f"{kind}: {obj}"
 
     def reformat_history(self, json_data):
         """Convert lists to tuples (from JSON serialization)"""

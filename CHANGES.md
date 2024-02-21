@@ -1,5 +1,11 @@
 # ui Changelog
 
+## [0.33.0]
+
+### Fixed
+
++ issue #13 : history works fine
+
 ## [0.31.1]
 
 Minor bump to fix pipelines.
