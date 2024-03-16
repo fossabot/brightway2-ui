@@ -27,8 +27,7 @@ jobs:
           conda config --set solver libmamba
           conda install -y -q conda-build anaconda-client
           cd conda.recipe
-          anaconda logout
-          anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          yes | anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
           conda config --set anaconda_upload yes
           conda build -c conda-forge -c cmutel -c haasad .
   conda-pkg-build-legacy:
@@ -52,7 +51,6 @@ jobs:
           conda config --set solver libmamba
           conda install -y -q conda-build anaconda-client
           cd conda.recipe-legacy
-          anaconda logout
-          anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          yes | anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
           conda config --set anaconda_upload yes
           conda build -c conda-forge -c cmutel -c haasad .
