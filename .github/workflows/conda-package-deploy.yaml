@@ -23,8 +23,6 @@ jobs:
       - run: |
           conda info
           conda config --set auto_update_conda False
-          conda install -y -q conda-libmamba-solver
-          conda config --set solver libmamba
           conda install -y -q conda-build anaconda-client
           anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
           conda config --set anaconda_upload yes
