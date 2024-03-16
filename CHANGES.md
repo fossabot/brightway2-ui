@@ -1,5 +1,12 @@
 # ui Changelog
 
+## [0.34.0]
+
+### Added
+
++ feature to search by reference product. search now allows to search location & categories
+  without providing search criterion
+
 ## [0.33.0]
 
 ### Fixed
