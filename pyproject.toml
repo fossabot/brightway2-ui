@@ -1,0 +1,126 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bw2ui"
+authors = [
+  { name="Chris Mutel", email="cmutel@gmail.com" }
+]
+maintainers = [
+  { name="Tomás NAVARRETE GUTIÉRREZ", email="tngTUDOR@users.noreply.github.com" }
+]
+description = "A web and command line user interface, part of the Brightway2 LCA framework https://brightway.dev."
+readme = "README.md"
+dynamic = ["version"]
+# Add here all kinds of additional classifiers as defined under
+# https://pypi.org/classifiers/
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering"
+]
+requires-python = ">=3.9"
+dependencies = [
+	# The requirements here are abstract, but they are different
+        # for brightway25 and brightway2.
+        # For brightway25, bw2calc must be >= 2.0.dev10
+        # for brightway2 brightwaycalc must be < 2
+        "bw2data",
+        "bw2calc",
+        "bw2analyzer",
+        "docopt",
+        "eight",
+        "flask",
+        "jinja2",
+        "stats_arrays",
+        "tabulate",
+        "genson",
+]
+
+[project.urls]
+source = "https://github.com/brightway-lca/brightway2-ui"
+homepage = "https://github.com/brightway-lca/brightway2-ui"
+tracker = "https://github.com/brightway-lca/brightway2-ui/issues"
+
+[project.optional-dependencies]
+# Getting recursive dependencies to work is a pain, this
+# seems to work, at least for now
+testing = [
+    "bw2ui",
+    "pytest",
+    "pytest-cov",
+    "python-coveralls"
+]
+dev = [
+    "build",
+    "pre-commit",
+    "black",
+    "isort",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "pytest-randomly",
+    "setuptools",
+]
+docs = [
+    "furo==2024.1.29",
+    "myst_parser==2.0.0",
+    "sphinx==7.2.6",
+    "sphinx-click==4.1.0",
+]
+
+[project.scripts]
+bw2-web = "bw2ui.bin.bw2_web:main"
+bw2-browser = "bw2ui.bin.bw2_browser:main"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+include-package-data = true
+packages = ["bw2ui"]
+
+[tool.setuptools.dynamic]
+version = {attr = "bw2ui.__version__"}
+
+
+[tool.pytest.ini_options]
+addopts = "--cov bw2ui --cov-report term-missing --verbose"
+norecursedirs = [
+    "dist",
+    "build",
+    ".tox"
+]
+testpaths = ["tests/*.py"]
+
+[tool.flake8]
+# Some sane defaults for the code style checker flake8
+max_line_length = 88
+extend_ignore = ["E203", "W503"]
+# ^  Black-compatible
+#    E203 and W503 have edge cases handled by black
+exclude = [
+    ".tox",
+    "build",
+    "dist",
+    ".eggs",
+    "docs/conf.py",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true

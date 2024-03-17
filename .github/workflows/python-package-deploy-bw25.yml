@@ -35,6 +35,7 @@ jobs:
         --user
     - name: Build a binary wheel and a source tarball
       run: >-
+        sed -i "s/name = \"bw2ui\"/name = \"$BW2UI_DIST_NAME\"/g" pyproject.toml
         python -m
         build
         --outdir dist/
