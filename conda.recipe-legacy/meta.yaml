@@ -1,6 +1,14 @@
+# The regex used is a bit different from original documenation:
+# https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#loading-data-from-other-files
+# Originald documentation implies that the __init__.py only has one line with __version__
+{% set version_match = load_file_regex(load_file="bw2ui/__init__.py",
+regex_pattern='(?:.*)__version__ = "(.+)"') %}
+{% set version = version_match[1] %}
+
+
 package:
         name: bw2ui
-        version: {{ GIT_DESCRIBE_TAG }}
+        version: {{ version }}
 
 source:
         git_url: ../
@@ -9,7 +17,6 @@ requirements:
         build:
                 - python
                 - setuptools
-                - setuptools_scm
         run:
                 - python >=3.6
                 - brightway2
@@ -24,9 +31,9 @@ requirements:
                 - genson
 
 about:
-        home: https://bitbucket.org/tomas_navarrete/brightway2-ui
+        home: https://github.com/brightway-lca/brightway2-ui
         license: BSD
-        license_file: LICENSE.txt
+        license_file: LICENSE
 
 build:
         entry_points:
@@ -34,3 +41,4 @@ build:
                 - bw2-web     = bw2ui.bin.bw2_web:main
 
         noarch: python
+        script: {{ PYTHON }} -m pip install --no-deps --no-build-isolation . -vv
