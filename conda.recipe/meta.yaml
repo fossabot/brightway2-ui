@@ -3,6 +3,9 @@ package:
         name: bw25ui
         version: {{ data.get('version') }}
 
+source:
+        git_url: ../
+
 requirements:
         build:
                 - python
