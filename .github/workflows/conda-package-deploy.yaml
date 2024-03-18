@@ -1,4 +1,5 @@
 ---
+name: Build and deploy conda packages (bw2ui and bw25ui)
 on:
   push:
     branches: [main, develop]
