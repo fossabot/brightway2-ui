@@ -121,6 +121,7 @@ by name.
     up: List upstream activities with pedigree info if avail (inputs for the current \
 activity).
     uu: List upstream activities with formula info if avail.
+    un: display uncertainty information of upstream activitities if avail.
     d: List downstream activities (activities which consume current activity).
     b: List biosphere flows for the current activity.
     cfs: Show characterization factors for current activity and current method.
@@ -522,7 +523,13 @@ Autosave is turned %(autosave)s.""" % {
         self.update_prompt()
 
     def format_exchanges_as_options(
-        self, es, kind, unit_override=None, show_formulas=False, show_pedigree=False
+        self,
+        es,
+        kind,
+        unit_override=None,
+        show_formulas=False,
+        show_pedigree=False,
+        show_uncertainty=False,
     ):
         objs = []
         for exc in es:
@@ -537,6 +544,9 @@ Autosave is turned %(autosave)s.""" % {
                     "amount": exc["amount"],
                     "formula": exc.get("formula", None),
                     "pedigree": exc.get("pedigree", None),
+                    "loc": exc.get("loc", None),
+                    "scale": exc.get("scale", None),
+                    "uncertainty_type": exc.get("uncertainty_type", None),
                     "key": exc["input"],
                 }
             )
@@ -545,6 +555,8 @@ Autosave is turned %(autosave)s.""" % {
             format_string = "%(amount).3g [=%(formula)s] %(unit)s %(name)s (%(location)s)"  # NOQA: E501
         elif show_pedigree:
             format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)\n\t[pedigree: %(pedigree)s] "  # NOQA: E501
+        elif show_uncertainty:
+            format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)\n\t[uncertainty type: %(uncertainty_type)s, scale: %(scale)s, loc: %(loc)s] "  # NOQA: E501
         else:
             format_string = "%(amount).3g %(unit)s %(name)s (%(location)s)"
 
@@ -1192,6 +1204,15 @@ Autosave is turned %(autosave)s.""" % {
         else:
             es = get_activity(self.activity).technosphere()
             self.format_exchanges_as_options(es, "technosphere", show_formulas=True)
+            self.print_current_options("Upstream inputs")
+
+    def do_un(self, arg):
+        """Display uncertainty infor of upstream activities if available"""
+        if not self.activity:
+            print("Need to choose an activity first")
+        else:
+            es = get_activity(self.activity).technosphere()
+            self.format_exchanges_as_options(es, "technosphere", show_uncertainty=True)
             self.print_current_options("Upstream inputs")
 
     def do_web(self, arg):
