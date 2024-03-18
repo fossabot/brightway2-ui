@@ -10,7 +10,6 @@ requirements:
         build:
                 - python
                 - setuptools
-                - setuptools_scm
         run:
                 - python >=3.6
                 - brightway25
@@ -35,3 +34,4 @@ build:
                 - bw2-web     = bw2ui.bin.bw2_web:main
 
         noarch: python
+        script: {{ PYTHON }} -m pip install --no-deps --no-build-isolation . -vv
