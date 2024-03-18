@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.36.0]
+
++ add command to show uncertainty fields of exchanges ("un")
+
 ## [0.35.0]
 
 + use brightwaylib cookiecutter recipe to build the package
