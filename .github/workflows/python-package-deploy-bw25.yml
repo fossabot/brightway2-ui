@@ -33,9 +33,11 @@ jobs:
         pip install
         build
         --user
-    - name: Build a binary wheel and a source tarball
+    - name: Prepare distribution name
       run: >-
         sed -i "s/name = \"bw2ui\"/name = \"$BW2UI_DIST_NAME\"/g" pyproject.toml
+    - name: Build a binary wheel and a source tarball
+      run: >-
         python -m
         build
         --outdir dist/
