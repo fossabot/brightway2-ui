@@ -24,8 +24,8 @@ jobs:
           conda info
           conda config --set auto_update_conda False
           conda install -y -q conda-build anaconda-client
-          anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
-          conda config --set anaconda_upload yes
+          #anaconda login --username ${{ secrets.ANACONDA_USER }} --password ${{ secrets.ANACONDA_PASSWORD }}
+          #conda config --set anaconda_upload yes
           cd conda.recipe
           conda build -c conda-forge -c cmutel -c haasad .
           cd ../conda.recipe-legacy
