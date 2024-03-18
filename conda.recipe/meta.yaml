@@ -24,9 +24,9 @@ requirements:
                 - genson
 
 about:
-        home: https://bitbucket.org/tomas_navarrete/brightway2-ui
+        home: https://github.com/brightway-lca/brightway2-ui
         license: BSD
-        license_file: LICENSE.txt
+        license_file: LICENSE
 
 build:
         entry_points:
