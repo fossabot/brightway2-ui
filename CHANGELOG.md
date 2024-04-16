@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.37.0]
+
++ add option to search by CAS number (only biosphere dbs)
+
 ## [0.36.0]
 
 + add command to show uncertainty fields of exchanges ("un")
