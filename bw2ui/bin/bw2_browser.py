@@ -18,7 +18,6 @@ Options:
 """
 from __future__ import print_function, unicode_literals
 
-import bw2analyzer as bwa
 import cmd
 import codecs
 import itertools
@@ -33,6 +32,8 @@ import traceback
 import uuid
 import warnings
 import webbrowser
+
+import bw2analyzer as bwa
 from bw2calc import MultiLCA
 from bw2data import (
     Database,
@@ -50,6 +51,7 @@ from bw2data.parameters import (
     Group,
     ProjectParameter,
 )
+from bw2data.query import Filter, Query
 from docopt import docopt
 from tabulate import tabulate
 
@@ -1086,6 +1088,9 @@ Autosave is turned %(autosave)s.""" % {
             elif "-cat" in arg:
                 re1a = r"(-cat\s)"  # Any Single Whitespace Character 1
                 search_criterion = "category"
+            elif "-cas" in arg:
+                re1a = r"(-cas\s)"  # Any Single Whitespace Character 1
+                search_criterion = "CAS number"
             elif "-rp" in arg:
                 re1a = r"(-rp\s)"  # Any Single Whitespace Character 1
                 search_criterion = "reference product"
@@ -1099,8 +1104,17 @@ Autosave is turned %(autosave)s.""" % {
             if m is None and "-loc" in arg:
                 print("Missing location in curly braces in command: -loc {MX} ...")
                 return
-            elif m is None and "-cat " in arg:
+            elif m is None and "-cat" in arg:
                 print("Missing category in curly braces in command: -cat {water} ...")
+                return
+            elif m is None and "-cas" in arg:
+                print(
+                    "Missing CAS Number in curly braces in command: -cas {000095-50-1} \
+                            ..."
+                )
+                return
+            elif "-cas" in arg and "biosphere" not in self.database:
+                print("CAS Number search only for biosphere dbs.")
                 return
             elif m is None and "-rp" in arg:
                 print(
@@ -1163,6 +1177,13 @@ Autosave is turned %(autosave)s.""" % {
                         filter=criteria,
                         limit=self.search_limit,
                     )
+            elif m and search_criterion == "CAS number":
+                q = Query()
+                filter_cas = Filter("CAS number", "is", criterion_value)
+                bio_db_data = Database(self.database).load()
+                q.add(filter_cas)
+                res = q(bio_db_data)
+                results = [get_activity(r) for r in res]
             else:
                 results = Database(self.database).search(
                     needle, limit=self.search_limit
