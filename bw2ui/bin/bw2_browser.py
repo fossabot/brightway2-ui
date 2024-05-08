@@ -979,6 +979,8 @@ Autosave is turned %(autosave)s.""" % {
             )
             indentation_char = " " * 4
             line_length = 50  # TODO: use dynamic line lenght or take from prefs
+            t_wrapper = textwrap.TextWrapper()
+            t_wrapper.width = line_length
             for field in [
                 k
                 for k in ds.keys()
@@ -994,12 +996,38 @@ Autosave is turned %(autosave)s.""" % {
                     "code",
                 ]
             ]:
-                field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
-                print("%(tab)s%(field)s:" % {"tab": indentation_char, "field": field})
-                for line in field_contents:
-                    print(
-                        "%(tab)s%(line)s" % {"tab": indentation_char * 2, "line": line}
+                if field.casefold() == "comment".casefold():
+                    t_wrapper.replace_whitespace = False
+                    contents = "\n".join(
+                        [
+                            "\n".join(t_wrapper.wrap(line))
+                            for line in ds[field].splitlines()
+                            if line.strip() != ""
+                        ]
                     )
+                    print(
+                        "%(tab)s%(field)s:" % {"tab": indentation_char, "field": field}
+                    )
+                    for line in contents.splitlines():
+                        print(
+                            "%(tab)s%(line)s"
+                            % {"tab": indentation_char * 2, "line": line}
+                        )
+                else:
+                    if isinstance(ds[field], str):
+                        t_wrapper.replace_whitespace = False
+                        field_contents = t_wrapper.wrap(ds[field])
+                    else:
+                        t_wrapper.break_long_words = False
+                        field_contents = t_wrapper.wrap(repr(ds[field]))
+                    print(
+                        "%(tab)s%(field)s:" % {"tab": indentation_char, "field": field}
+                    )
+                    for line in field_contents:
+                        print(
+                            "%(tab)s%(line)s"
+                            % {"tab": indentation_char * 2, "line": line}
+                        )
 
     def do_l(self, arg):
         """List current options"""
