@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.38.0]
+
++ better handling of text flow for ii text fields
+
 ## [0.37.0]
 
 + add option to search by CAS number (only biosphere dbs)
