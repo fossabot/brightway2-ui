@@ -121,3 +121,15 @@ activating the environment
 ```bash
 conda activate sphinx_brightway2-ui
 ```
+
+and [running the build command](https://www.sphinx-doc.org/en/master/man/sphinx-build.html#sphinx-build):
+
+```bash
+sphinx-build docs _build/html --builder=html --jobs=auto --write-all; open _build/html/index.html
+```
+
+and [running the build command](https://www.sphinx-doc.org/en/master/man/sphinx-build.html#sphinx-build):
+
+```bash
+sphinx-build docs _build/html --builder=html --jobs=auto --write-all; open _build/html/index.html
+```
