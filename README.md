@@ -1,9 +1,9 @@
 # Brightway2-UI
 
-[![PyPI](https://img.shields.io/pypi/v/brightway2-ui.svg)][pypi status]
-[![Status](https://img.shields.io/pypi/status/brightway2-ui.svg)][pypi status]
-[![Python Version](https://img.shields.io/pypi/pyversions/brightway2-ui)][pypi status]
-[![License](https://img.shields.io/pypi/l/brightway2-ui)][license]
+[![PyPI](https://img.shields.io/pypi/v/bw25ui.svg)][pypi status]
+[![Status](https://img.shields.io/pypi/status/bw25ui.svg)][pypi status]
+[![Python Version](https://img.shields.io/pypi/pyversions/bw25ui)][pypi status]
+[![License](https://img.shields.io/pypi/l/bw25ui)][license]
 
 [![Read the documentation at https://brightway2-ui.readthedocs.io/](https://img.shields.io/readthedocs/brightway2-ui/latest.svg?label=Read%20the%20Docs)][read the docs]
 [![Tests](https://github.com/brightway-lca/brightway2-ui/actions/workflows/python-test.yml/badge.svg)][tests]
@@ -12,7 +12,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
-[pypi status]: https://pypi.org/project/brightway2-ui/
+[pypi status]: https://pypi.org/project/bw25ui/
 [read the docs]: https://brightway2-ui.readthedocs.io/
 [tests]: https://github.com/brightway-lca/brightway2-ui/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/brightway-lca/brightway2-ui
