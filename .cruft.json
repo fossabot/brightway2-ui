@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/brightway-lca/cookiecutter-brightwaylib",
-  "commit": "ed6d9090fe8aebb87cd198be5b1abe84e39db280",
+  "commit": "9ee47efb8072303cf6476d873f392c7753d98082",
   "checkout": null,
   "context": {
     "cookiecutter": {
