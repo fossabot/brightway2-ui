@@ -6,7 +6,6 @@
 [![License](https://img.shields.io/pypi/l/bw25ui)][license]
 
 [![Read the documentation at https://brightway2-ui.readthedocs.io/](https://img.shields.io/readthedocs/brightway2-ui/latest.svg?label=Read%20the%20Docs)][read the docs]
-[![Tests](https://github.com/brightway-lca/brightway2-ui/actions/workflows/python-test.yml/badge.svg)][tests]
 [![Codecov](https://codecov.io/gh/brightway-lca/brightway2-ui/branch/main/graph/badge.svg)][codecov]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
@@ -14,7 +13,6 @@
 
 [pypi status]: https://pypi.org/project/bw25ui/
 [read the docs]: https://brightway2-ui.readthedocs.io/
-[tests]: https://github.com/brightway-lca/brightway2-ui/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/brightway-lca/brightway2-ui
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
