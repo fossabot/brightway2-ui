@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.40.0]
+
++ sync bw2 and bw25 support for MultiLCA
+
 ## [0.39.0]
 
 + support new MultiLCA class API changes
