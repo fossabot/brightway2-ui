@@ -32,9 +32,10 @@ import traceback
 import uuid
 import warnings
 import webbrowser
+from packaging import version
 
 import bw2analyzer as bwa
-from bw2calc import MultiLCA
+import bw2calc as bc
 from bw2data import (
     Database,
     Method,
@@ -45,6 +46,9 @@ from bw2data import (
     methods,
     projects,
 )
+
+if bc.__version__ and isinstance(bc.__version__, str) and version.parse(bc.__version__) >= version.parse("2.0.DEV10"):
+    from bw2data import get_multilca_data_objs
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
@@ -192,6 +196,9 @@ class ActivityBrowser(cmd.Cmd):
             index = int(opt)
             if index >= len(self.current_options.get("formatted", [])):
                 print("There aren't this many options")
+            elif self.current_options["type"] == "method_namespaces":
+                self.choose_method_namespace(self.current_options["options"][index])
+
             elif self.current_options["type"] == "methods":
                 self.choose_method(self.current_options["options"][index])
 
@@ -618,17 +625,50 @@ Autosave is turned %(autosave)s.""" % {
             for m in methods_:
                 m_names.add(m[0])
             m_names = sorted(m_names)
-            self.set_current_options(
-                {
-                    "type": "methods",
-                    "options": list(m_names),
-                    "formatted": ["%(name)s" % {"name": name} for name in m_names],
-                }
-            )
-            self.print_current_options("Methods")
+            if has_namespaced_methods():
+                self.set_current_options(
+                    {
+                        "type": "method_namespaces",
+                        "options": list(m_names),
+                        "formatted": ["%(name)s" % {"name": name} for name in m_names],
+                    }
+                )
+                self.print_current_options("Method namespaces")
+            else:
+                self.set_current_options(
+                    {
+                        "type": "methods",
+                        "options": list(m_names),
+                        "formatted": ["%(name)s" % {"name": name} for name in m_names],
+                    }
+                )
+                self.print_current_options("Methods")
         else:
             self.set_current_options(None)
             self.update_prompt()
+
+    def choose_method_namespace(self, method_namespace):
+        self.method_namespace = method_namespace
+        self.method = self.category = self.subcategory = None
+        self.history.append(("method_namespace", method_namespace))
+        if self.autosave:
+            config.p["ab_method_namespace"] = self.method
+            config.p["ab_history"] = self.history[-10:]
+            config.save_preferences()
+        c_names = set([])
+        methods_ = sorted(methods)
+        for m in [m for m in methods_ if m[0] == method_namespace]:
+            c_names.add(m[1])
+        c_names = sorted(c_names)
+        self.set_current_options(
+            {
+                "type": "methods",
+                "options": list(c_names),
+                "formatted": ["%(name)s" % {"name": name} for name in c_names],
+            }
+        )
+        self.print_current_options("Methods")
+        self.update_prompt()
 
     def choose_method(self, method):
         self.method = method
@@ -640,8 +680,14 @@ Autosave is turned %(autosave)s.""" % {
             config.save_preferences()
         c_names = set([])
         methods_ = sorted(methods)
-        for m in [m for m in methods_ if m[0] == method]:
-            c_names.add(m[1])
+        if has_namespaced_methods():
+            for m in [
+                m for m in methods_ if m[0] == self.method_namespace and m[1] == method
+            ]:
+                c_names.add(m[2])
+        else:
+            for m in [m for m in methods_ if m[0] == method]:
+                c_names.add(m[1])
         c_names = sorted(c_names)
         self.set_current_options(
             {
@@ -662,8 +708,18 @@ Autosave is turned %(autosave)s.""" % {
             config.save_preferences()
         c_names = set([])
         methods_ = sorted(methods)
-        for m in [m for m in methods_ if m[0] == self.method and m[1] == category]:
-            c_names.add(m[2])
+        if has_namespaced_methods():
+            for m in [
+                m
+                for m in methods_
+                if m[0] == self.method_namespace
+                and m[1] == self.method
+                and m[2] == category
+            ]:
+                c_names.add(m[3])
+        else:
+            for m in [m for m in methods_ if m[0] == self.method and m[1] == category]:
+                c_names.add(m[2])
         self.set_current_options(
             {
                 "type": "subcategories",
@@ -979,6 +1035,8 @@ Autosave is turned %(autosave)s.""" % {
             )
             indentation_char = " " * 4
             line_length = 50  # TODO: use dynamic line lenght or take from prefs
+            t_wrapper = textwrap.TextWrapper()
+            t_wrapper.width = line_length
             for field in [
                 k
                 for k in ds.keys()
@@ -994,12 +1052,38 @@ Autosave is turned %(autosave)s.""" % {
                     "code",
                 ]
             ]:
-                field_contents = textwrap.wrap(repr(ds[field]), width=line_length)
-                print("%(tab)s%(field)s:" % {"tab": indentation_char, "field": field})
-                for line in field_contents:
-                    print(
-                        "%(tab)s%(line)s" % {"tab": indentation_char * 2, "line": line}
+                if field.casefold() == "comment".casefold():
+                    t_wrapper.replace_whitespace = False
+                    contents = "\n".join(
+                        [
+                            "\n".join(t_wrapper.wrap(line))
+                            for line in ds[field].splitlines()
+                            if line.strip() != ""
+                        ]
                     )
+                    print(
+                        "%(tab)s%(field)s:" % {"tab": indentation_char, "field": field}
+                    )
+                    for line in contents.splitlines():
+                        print(
+                            "%(tab)s%(line)s"
+                            % {"tab": indentation_char * 2, "line": line}
+                        )
+                else:
+                    if isinstance(ds[field], str):
+                        t_wrapper.replace_whitespace = False
+                        field_contents = t_wrapper.wrap(ds[field])
+                    else:
+                        t_wrapper.break_long_words = False
+                        field_contents = t_wrapper.wrap(repr(ds[field]))
+                    print(
+                        "%(tab)s%(field)s:" % {"tab": indentation_char, "field": field}
+                    )
+                    for line in field_contents:
+                        print(
+                            "%(tab)s%(line)s"
+                            % {"tab": indentation_char * 2, "line": line}
+                        )
 
     def do_l(self, arg):
         """List current options"""
@@ -1255,11 +1339,31 @@ Autosave is turned %(autosave)s.""" % {
                 f.write(line + "\n")
         print("History exported to %(fp)s" % {"fp": fp})
 
-    def do_G(self, arg):
-        """Do an LCIA of the selected activity + method[s]"""
-        if self.activity and self.method:
-            method_key_list = []
-
+    def build_method_key_list(self):
+        method_key_list = []
+        if has_namespaced_methods():
+            if (
+                self.method_namespace
+                and self.method
+                and self.category
+                and self.subcategory
+            ):
+                method_id = (
+                    self.method_namespace,
+                    self.method,
+                    self.category,
+                    self.subcategory,
+                )
+                method_key_list.append(method_id)
+            elif self.method_namespace and self.method and self.category is None:
+                for m in methods:
+                    if m[0] == self.method_namespace and m[1] == self.method:
+                        method_key_list.append(m)
+            elif self.method_namespace and self.method is None:
+                for m in methods:
+                    if m[0] == self.method_namespace:
+                        method_key_list.append(m)
+        else:
             if self.method and self.category and self.subcategory:
                 method_id = (self.method, self.category, self.subcategory)
                 method_key_list.append(method_id)
@@ -1271,23 +1375,66 @@ Autosave is turned %(autosave)s.""" % {
                 for m in methods:
                     if m[0] == self.method:
                         method_key_list.append(m)
-            bw2browser_cs = {
-                "inv": [{get_activity(self.activity): 1}],
-                "ia": method_key_list,
-            }
-            tmp_cs_id = uuid.uuid1()
-            calculation_setups[str(tmp_cs_id)] = bw2browser_cs
-            mlca = MultiLCA(str(tmp_cs_id))
-            formatted_res = [
-                [
-                    mlca.methods[i][0],
-                    mlca.methods[i][1],
-                    mlca.methods[i][2],
-                    Method(mlca.methods[i]).metadata["unit"],
-                    score.pop(),
+        return method_key_list
+
+    def do_G(self, arg):
+        """Do an LCIA of the selected activity + method[s]"""
+        if self.activity and self.method:
+            method_key_list = self.build_method_key_list()
+
+            if has_namespaced_methods():
+                namespace_shift = 1
+            else:
+                namespace_shift = 0
+
+            if bc.__version__ and isinstance(bc.__version__, str) and version.parse(bc.__version__) >= version.parse(
+                "2.0.DEV10"
+            ):
+                # the configuration
+                config = {"impact_categories": method_key_list}
+                activities = [get_activity(self.activity)]
+                func_units = {a["name"]: {a.id: 1.0} for a in activities}
+                data_objs = get_multilca_data_objs(
+                    functional_units=func_units, method_config=config
+                )
+                mlca = bc.MultiLCA(
+                    demands=func_units, method_config=config, data_objs=data_objs
+                )
+                mlca.lci()
+                mlca.lcia()
+                formatted_res = []
+                for (method, fu), score in mlca.scores.items():
+                    method_name = method[0 + namespace_shift]
+                    category_name = method[1 + namespace_shift]
+                    indicator_name = method[2 + namespace_shift]
+                    formatted_res.append(
+                        [
+                            method_name,
+                            category_name,
+                            indicator_name,
+                            Method(method).metadata["unit"],
+                            score,
+                        ]
+                    )
+
+            else:
+                bw2browser_cs = {
+                    "inv": [{get_activity(self.activity): 1}],
+                    "ia": method_key_list,
+                }
+                tmp_cs_id = uuid.uuid1()
+                calculation_setups[str(tmp_cs_id)] = bw2browser_cs
+                mlca = bc.MultiLCA(str(tmp_cs_id))
+                formatted_res = [
+                    [
+                        mlca.methods[i][0],
+                        mlca.methods[i][1],
+                        mlca.methods[i][2],
+                        Method(mlca.methods[i]).metadata["unit"],
+                        score.pop(),
+                    ]
+                    for i, score in enumerate(mlca.results.T.tolist())
                 ]
-                for i, score in enumerate(mlca.results.T.tolist())
-            ]
             self.tabulate_data = tabulate(
                 formatted_res,
                 headers=["method", "category", "subcategory", "unit", "score"],
@@ -1578,6 +1725,13 @@ def bw2_compat_annotated_top_emissions(lca, names=True, **kwargs):
 
 def is_legacy_bwa():
     return bwa.__version__[0] == 0 and bwa.__version__[1] == 10
+
+def is_legacy_bc():
+    return isinstance(bc.__version__, tuple)
+
+
+def has_namespaced_methods():
+    return len(list(methods)[0]) == 4
 
 
 def main():
