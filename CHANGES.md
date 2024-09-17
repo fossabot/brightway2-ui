@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.42.0]
+
++ Fix method listing when project is empty
+
 ## [0.41.0]
 
 + fix #51: show cfs for namespaced methods

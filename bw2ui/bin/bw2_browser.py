@@ -658,7 +658,7 @@ Autosave is turned %(autosave)s.""" % {
             for m in methods_:
                 m_names.add(m[0])
             m_names = sorted(m_names)
-            if has_namespaced_methods():
+            if len(methods_) > 0 and has_namespaced_methods():
                 self.set_current_options(
                     {
                         "type": "method_namespaces",
