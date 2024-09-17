@@ -1,6 +1,6 @@
 # ui Changelog
 
-## Unreleased
+## [0.41.0]
 
 + fix #51: show cfs for namespaced methods
 + G command output includes method namespace if avail
