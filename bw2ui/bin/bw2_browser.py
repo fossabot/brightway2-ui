@@ -32,6 +32,7 @@ import traceback
 import uuid
 import warnings
 import webbrowser
+from bw2data.data_store import UnknownObject
 from packaging import version
 
 import bw2analyzer as bwa
@@ -47,7 +48,11 @@ from bw2data import (
     projects,
 )
 
-if bc.__version__ and isinstance(bc.__version__, str) and version.parse(bc.__version__) >= version.parse("2.0.DEV10"):
+if (
+    bc.__version__
+    and isinstance(bc.__version__, str)
+    and version.parse(bc.__version__) >= version.parse("2.0.DEV10")
+):
     from bw2data import get_multilca_data_objs
 from bw2data.parameters import (
     ActivityParameter,
@@ -369,7 +374,7 @@ Autosave is turned %(autosave)s.""" % {
         for m in current_methods:
             method_ = Method(m)
             cfs = method_.load()
-            if activity:
+            if activity and "biosphere" in self.database:
                 cfs = [cf for cf in cfs if get_activity(cf[0]).key == activity]
             for cf in cfs:
                 # in bw2, the first elment of the cf data is a key -> tuple('db', 'id')
@@ -386,26 +391,54 @@ Autosave is turned %(autosave)s.""" % {
                 flow_subcat = None
                 if len(flow_cat_tup) == 2:
                     flow_subcat = flow_cat_tup[1]
-                line = [
-                    m[1],
-                    m[2],
-                    cf[1],
-                    flow["name"],
-                    flow_cat,
-                    flow_subcat,
-                    method_.metadata["unit"],
-                ]
+                if has_namespaced_methods():
+                    line = [
+                        m[0],
+                        m[1],
+                        m[2],
+                        m[3],
+                        cf[1],
+                        flow["name"],
+                        flow_cat,
+                        flow_subcat,
+                        method_.metadata["unit"],
+                    ]
+                else:
+                    line = [
+                        m[0],
+                        m[1],
+                        m[2],
+                        cf[1],
+                        flow["name"],
+                        flow_cat,
+                        flow_subcat,
+                        method_.metadata["unit"],
+                    ]
                 table_lines.append(line)
         if table_lines:
-            headers = [
-                "method",
-                "category",
-                "cf",
-                "flow",
-                "flow_category",
-                "flow_subcategory",
-                "unit",
-            ]
+            if has_namespaced_methods():
+                headers = [
+                    "namespace",
+                    "method",
+                    "category",
+                    "indicator",
+                    "cf",
+                    "flow",
+                    "flow_category",
+                    "flow_subcategory",
+                    "unit",
+                ]
+            else:
+                headers = [
+                    "method",
+                    "category",
+                    "indicator",
+                    "cf",
+                    "flow",
+                    "flow_category",
+                    "flow_subcategory",
+                    "unit",
+                ]
             print("CFS")
             self.tabulate_data = tabulate(table_lines, headers=headers, tablefmt="tsv")
             print(tabulate(table_lines, headers=headers))
@@ -851,18 +884,41 @@ Autosave is turned %(autosave)s.""" % {
             self.print_current_options("Biosphere flows")
 
     def do_cfs(self, arg):
-        """Print cfs of biosphere flows."""
+        """Print cfs of biosphere flows or method."""
         # Support multiple biosphere databases in one project
         if (
-            self.activity and "biosphere" in self.database
-        ) or self.method:  # show the cfs for the given flow
-            current_methods = [m for m in methods if m[0] == self.method]
-            if self.category:  # show cfs for current cat, current act
-                current_methods = [m for m in current_methods if m[1] == self.category]
-                if self.subcategory:
+            (
+                self.activity
+                and "biosphere" in self.database  # show the cfs for the given flow
+            )
+            or self.method
+            or self.method_namespace
+        ):  # show the cfs of a given method
+            if has_namespaced_methods():
+                namespace_shift = 1
+            else:
+                namespace_shift = 0
+            if has_namespaced_methods() and self.method_namespace:
+                current_methods = [m for m in methods if m[0] == self.method_namespace]
+            if self.method:
+                current_methods = [
+                    m for m in methods if m[0 + namespace_shift] == self.method
+                ]
+                # print(f"Current namespace {self.method_namespace}")
+                # print(f"Current methods {current_methods}")
+                # print(f"Current method {self.method}")
+                if self.category:  # show cfs for current cat, current act
                     current_methods = [
-                        m for m in current_methods if m[2] == self.subcategory
+                        m
+                        for m in current_methods
+                        if m[1 + namespace_shift] == self.category
                     ]
+                    if self.subcategory:
+                        current_methods = [
+                            m
+                            for m in current_methods
+                            if m[2 + namespace_shift] == self.subcategory
+                        ]
         else:
             print("No method currently selected")  # Alternative: cfs for all methods?
             return False
@@ -1107,9 +1163,21 @@ Autosave is turned %(autosave)s.""" % {
     def do_mi(self, arg):
         """Show method information"""
         if self.method and self.category and self.subcategory:
-            m = Method((self.method, self.category, self.subcategory))
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(m.metadata)
+            if has_namespaced_methods() and self.method_namespace:
+                m_key = (
+                    self.method_namespace,
+                    self.method,
+                    self.category,
+                    self.subcategory,
+                )
+            else:
+                m_key = (self.method, self.category, self.subcategory)
+            try:
+                m = Method(m_key)
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(m.metadata)
+            except UnknownObject:
+                print(f"Method {m_key} not found")
         else:
             print("No current method selected")
 
@@ -1387,8 +1455,10 @@ Autosave is turned %(autosave)s.""" % {
             else:
                 namespace_shift = 0
 
-            if bc.__version__ and isinstance(bc.__version__, str) and version.parse(bc.__version__) >= version.parse(
-                "2.0.DEV10"
+            if (
+                bc.__version__
+                and isinstance(bc.__version__, str)
+                and version.parse(bc.__version__) >= version.parse("2.0.DEV10")
             ):
                 # the configuration
                 config = {"impact_categories": method_key_list}
@@ -1403,19 +1473,21 @@ Autosave is turned %(autosave)s.""" % {
                 mlca.lci()
                 mlca.lcia()
                 formatted_res = []
-                for (method, fu), score in mlca.scores.items():
+                for (method, _), score in mlca.scores.items():
                     method_name = method[0 + namespace_shift]
                     category_name = method[1 + namespace_shift]
                     indicator_name = method[2 + namespace_shift]
-                    formatted_res.append(
-                        [
-                            method_name,
-                            category_name,
-                            indicator_name,
-                            Method(method).metadata["unit"],
-                            score,
-                        ]
-                    )
+                    formatted_res_item = [
+                        method_name,
+                        category_name,
+                        indicator_name,
+                        Method(method).metadata["unit"],
+                        score,
+                    ]
+                    if has_namespaced_methods():
+                        formatted_res_item.insert(0, method[0])
+
+                    formatted_res.append(formatted_res_item)
 
             else:
                 bw2browser_cs = {
@@ -1435,17 +1507,15 @@ Autosave is turned %(autosave)s.""" % {
                     ]
                     for i, score in enumerate(mlca.results.T.tolist())
                 ]
+            headers = ["method", "category", "subcategory", "unit", "score"]
+            if has_namespaced_methods():
+                headers.insert(0, "namespace")
             self.tabulate_data = tabulate(
                 formatted_res,
-                headers=["method", "category", "subcategory", "unit", "score"],
+                headers=headers,
                 tablefmt="tsv",
             )
-            print(
-                tabulate(
-                    formatted_res,
-                    headers=["method", "category", "subcategory", "unit", "score"],
-                )
-            )
+            print(tabulate(formatted_res, headers=headers))
         else:
             print("Select at least a method first")
 
@@ -1725,6 +1795,7 @@ def bw2_compat_annotated_top_emissions(lca, names=True, **kwargs):
 
 def is_legacy_bwa():
     return bwa.__version__[0] == 0 and bwa.__version__[1] == 10
+
 
 def is_legacy_bc():
     return isinstance(bc.__version__, tuple)

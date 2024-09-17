@@ -1,5 +1,10 @@
 # ui Changelog
 
+## Unreleased
+
++ fix #51: show cfs for namespaced methods
++ G command output includes method namespace if avail
+
 ## [0.40.0]
 
 + sync bw2 and bw25 support for MultiLCA
