@@ -32,11 +32,10 @@ import traceback
 import uuid
 import warnings
 import webbrowser
-from bw2data.data_store import UnknownObject
-from packaging import version
 
 import bw2analyzer as bwa
 import bw2calc as bc
+from bw2data import __version__ as bd_version
 from bw2data import (
     Database,
     Method,
@@ -47,6 +46,8 @@ from bw2data import (
     methods,
     projects,
 )
+from bw2data.data_store import UnknownObject
+from packaging import version
 
 if (
     bc.__version__
@@ -54,6 +55,7 @@ if (
     and version.parse(bc.__version__) >= version.parse("2.0.DEV10")
 ):
     from bw2data import get_multilca_data_objs
+
 from bw2data.parameters import (
     ActivityParameter,
     DatabaseParameter,
@@ -65,6 +67,8 @@ from docopt import docopt
 from tabulate import tabulate
 
 warnings.filterwarnings("ignore", ".*Read only project.*")
+
+FTS5_ENABLED_BD_VERSION = "4.0.dev47"
 
 GRUMPY = itertools.cycle(
     (
@@ -1234,6 +1238,7 @@ Autosave is turned %(autosave)s.""" % {
         else:
             re1a = r"."
             search_criterion = None
+            criterion_value = None
             if "-loc" in arg:
                 re1a = r"(-loc\s)"  # Any Single Whitespace Character 1
                 search_criterion = "location"
@@ -1284,63 +1289,18 @@ Autosave is turned %(autosave)s.""" % {
                     )
                 )
 
-            specials = [" ", "/", "-", "&"]
-            if m and search_criterion == "location":
-                if not any(special in criterion_value for special in specials):
-                    criteria = {"location": criterion_value}
-                    if needle:
-                        results = Database(self.database).search(
-                            needle, filter=criteria, limit=self.search_limit
-                        )
-                    else:
-                        results = [
-                            a
-                            for a in Database(self.database)
-                            if a.get("location", "").casefold()
-                            == criterion_value.casefold()
-                        ]
-
-                else:  # complex criterion_value
-                    if needle:
-                        results = Database(self.database).search(needle, limit=None)
-                    else:
-                        results = Database(self.database)
-                    results = [
-                        r
-                        for r in results
-                        if r[search_criterion].casefold() == criterion_value.casefold()
-                    ]
-            elif m and search_criterion == "category":
-                criteria = {"categories": criterion_value.split("::")}
-                results = Database(self.database).search(
-                    needle, filter=criteria, limit=self.search_limit
-                )
-            elif m and search_criterion == "reference product":
-                if needle is None:
-                    results = [
-                        a
-                        for a in Database(self.database)
-                        if a[search_criterion].casefold() == criterion_value.casefold()
-                    ]
-                else:
-                    criteria = {"product": criterion_value}
-                    results = Database(self.database).search(
-                        needle,
-                        filter=criteria,
-                        limit=self.search_limit,
-                    )
-            elif m and search_criterion == "CAS number":
-                q = Query()
-                filter_cas = Filter("CAS number", "is", criterion_value)
-                bio_db_data = Database(self.database).load()
-                q.add(filter_cas)
-                res = q(bio_db_data)
-                results = [get_activity(r) for r in res]
-            else:
-                results = Database(self.database).search(
-                    needle, limit=self.search_limit
-                )
+            # if is_legacy_bd():
+            results = search_bw2(
+                search_criterion,
+                criterion_value,
+                self.database,
+                needle,
+                self.search_limit,
+            )
+            # else:
+            # results = search_bw25(m, search_criterion, criterion_value, db, needle, self)
             results_keys = [r.key for r in results]
+
             self.set_current_options(
                 {
                     "type": "activities",
@@ -1801,8 +1761,58 @@ def is_legacy_bc():
     return isinstance(bc.__version__, tuple)
 
 
+def is_legacy_bd():
+    if isinstance(bd_version, tuple):
+        return True
+    elif isinstance(bd_version, str) and version.parse(bd_version) < version.parse(
+        FTS5_ENABLED_BD_VERSION
+    ):
+        return True
+    return False
+
+
 def has_namespaced_methods():
     return len(list(methods)[0]) == 4
+
+
+def search_bw2(search_criterion, criterion_value, database, needle, search_limit):
+    """Search and then filter by criteria."""
+    if needle is None:
+        needle = ""
+
+    if search_criterion and criterion_value:
+        if (
+            search_criterion == "location"
+            or search_criterion == "reference product"
+            or search_criterion == "CAS number"
+        ):
+            if needle:
+                results = Database(database).search(needle, limit=search_limit)
+            else:
+                results = Database(database)
+            results = [
+                r
+                for r in results
+                if r.get(search_criterion)
+                and r.get(search_criterion, "").casefold() == criterion_value.casefold()
+            ]
+
+        elif search_criterion == "category":
+            criterion = tuple(map(lambda x: x.casefold(), criterion_value.split("::")))
+            if needle:
+                results = Database(database).search(needle, limit=search_limit)
+            else:
+                results = Database(database)
+            results = [
+                r
+                for r in results
+                if r.get("categories")
+                and tuple(map(lambda x: x.casefold(), r.get("categories"))) == criterion
+            ]
+
+    else:
+        results = Database(database).search(needle, limit=search_limit)
+    return results
 
 
 def main():
