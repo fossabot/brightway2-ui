@@ -1,5 +1,9 @@
 # ui Changelog
 
+## [0.43.0]
+
++ Fix search incompatibility with FTS5
+
 ## [0.42.0]
 
 + Fix method listing when project is empty
