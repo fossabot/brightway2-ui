@@ -1,6 +1,7 @@
 # Brightway2-UI
 
-[![PyPI](https://img.shields.io/pypi/v/bw25ui.svg)][pypi status]
+[![PyPI](https://img.shields.io/pypi/v/bw25ui.svg)][![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbrightway-lca%2Fbrightway2-ui.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbrightway-lca%2Fbrightway2-ui?ref=badge_shield)
+[pypi status]
 [![Status](https://img.shields.io/pypi/status/bw25ui.svg)][pypi status]
 [![Python Version](https://img.shields.io/pypi/pyversions/bw25ui)][pypi status]
 [![License](https://img.shields.io/pypi/l/bw25ui)][license]
@@ -91,6 +92,9 @@ To learn more, see the [Contributor Guide][Contributor Guide].
 
 Distributed under the terms of the [BSD-3 license][License],
 _bw2ui_ is free and open source software.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbrightway-lca%2Fbrightway2-ui.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbrightway-lca%2Fbrightway2-ui?ref=badge_large)
 
 ## Issues
 
